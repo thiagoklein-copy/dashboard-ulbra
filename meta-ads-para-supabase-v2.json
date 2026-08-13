@@ -341,6 +341,11 @@
               "type": "string"
             },
             {
+              "name": "preview_shareable_link",
+              "value": "={{ $json.preview_shareable_link || null }}",
+              "type": "string"
+            },
+            {
               "name": "image_hash",
               "value": "={{ $json.creative?.asset_feed_spec?.images?.[0]?.hash || $json.creative?.image_hash || null }}",
               "type": "string"
@@ -481,6 +486,11 @@
               "type": "string"
             },
             {
+              "name": "preview_shareable_link",
+              "value": "={{ $('Mapear Criativos').item.json.preview_shareable_link || null }}",
+              "type": "string"
+            },
+            {
               "name": "image_url",
               "value": "={{ $json.data?.[0]?.permalink_url || $('Mapear Criativos').item.json.thumbnail_url || null }}",
               "type": "string"
@@ -546,6 +556,11 @@
             {
               "name": "video_id",
               "value": "={{ $json.video_id }}",
+              "type": "string"
+            },
+            {
+              "name": "preview_shareable_link",
+              "value": "={{ $json.preview_shareable_link || null }}",
               "type": "string"
             },
             {
@@ -647,7 +662,7 @@
           "parameters": [
             {
               "name": "fields",
-              "value": "id,name,campaign{name},creative{id,thumbnail_url,object_type,title,body,image_url,image_hash,video_id,link_url,call_to_action_type,asset_feed_spec}"
+              "value": "id,name,campaign{name},preview_shareable_link,creative{id,thumbnail_url,object_type,title,body,image_url,image_hash,video_id,link_url,call_to_action_type,asset_feed_spec}"
             },
             {
               "name": "limit",

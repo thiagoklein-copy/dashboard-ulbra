@@ -1,8 +1,13 @@
 "use client";
 
-import { ImageIcon, Play } from "lucide-react";
+import { ExternalLink, ImageIcon, Play } from "lucide-react";
 import { VideoRetentionChart } from "@/components/video-retention-chart";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import {
+  facebookVideoEmbedUrl,
+  facebookWatchUrl,
+  resolveAdPreviewUrl,
+} from "@/lib/ad-links";
 import type { AggregatedRow } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -71,6 +76,12 @@ export function CreativeExpanded({
   const videoSrc = row.video_storage_url?.trim() || null;
   const hasTranscript = Boolean(row.video_transcript?.trim());
   const showTranscriptPending = Boolean(row.video_id) && !hasTranscript;
+  const adPreviewUrl = resolveAdPreviewUrl(
+    row.preview_shareable_link,
+    row.ad_id
+  );
+  const videoWatchUrl = row.video_id ? facebookWatchUrl(row.video_id) : null;
+  const landingUrl = row.link_url?.trim() || null;
 
   return (
     <div className="space-y-5">
@@ -88,6 +99,14 @@ export function CreativeExpanded({
                 poster={proxyImagem(row.image_url) ?? undefined}
                 src={videoSrc}
               />
+            ) : row.video_id ? (
+              <iframe
+                title={`Vídeo do anúncio ${row.name}`}
+                src={facebookVideoEmbedUrl(row.video_id)}
+                className="aspect-[4/5] w-full max-h-[min(70vh,760px)] border-0 bg-black"
+                allow="autoplay; clipboard-write; encrypted-media; picture-in-picture"
+                allowFullScreen
+              />
             ) : row.image_url ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
@@ -99,14 +118,6 @@ export function CreativeExpanded({
               <div className="flex min-h-[220px] w-full flex-col items-center justify-center gap-2 text-muted-foreground">
                 <ImageIcon className="size-8 opacity-50" />
                 <p className="text-xs">Sem mídia disponível</p>
-              </div>
-            )}
-
-            {!videoSrc && row.video_id && row.image_url && (
-              <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-black/25">
-                <div className="flex size-12 items-center justify-center rounded-full bg-white/90 shadow">
-                  <Play className="size-5 fill-black text-black" />
-                </div>
               </div>
             )}
           </div>
@@ -156,18 +167,53 @@ export function CreativeExpanded({
               </p>
             </div>
 
-            {row.link_url && (
+            {adPreviewUrl && (
               <div>
                 <p className="mb-1 text-xs font-medium tracking-wide text-muted-foreground uppercase">
-                  Link
+                  Ver anúncio
                 </p>
                 <a
-                  href={row.link_url}
+                  href={adPreviewUrl}
                   target="_blank"
                   rel="noreferrer"
-                  className="break-all text-sm text-blue-600 hover:underline"
+                  className="inline-flex items-center gap-1.5 text-sm font-medium text-blue-600 hover:underline"
                 >
-                  {row.link_url}
+                  Abrir no Gerenciador de Anúncios
+                  <ExternalLink className="size-3.5" />
+                </a>
+              </div>
+            )}
+
+            {videoWatchUrl && (
+              <div>
+                <p className="mb-1 text-xs font-medium tracking-wide text-muted-foreground uppercase">
+                  Vídeo
+                </p>
+                <a
+                  href={videoWatchUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center gap-1.5 text-sm font-medium text-blue-600 hover:underline"
+                >
+                  Abrir vídeo no Facebook
+                  <ExternalLink className="size-3.5" />
+                </a>
+              </div>
+            )}
+
+            {landingUrl && (
+              <div>
+                <p className="mb-1 text-xs font-medium tracking-wide text-muted-foreground uppercase">
+                  Página de destino
+                </p>
+                <a
+                  href={landingUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center gap-1.5 break-all text-sm text-blue-600 hover:underline"
+                >
+                  {landingUrl}
+                  <ExternalLink className="size-3.5 shrink-0" />
                 </a>
               </div>
             )}

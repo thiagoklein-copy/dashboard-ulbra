@@ -104,6 +104,7 @@ function normalizeRow(row: RawInsightRow): AdInsightRow {
     result_indicator: row.result_indicator ?? null,
     video_storage_url: row.video_storage_url ?? raw.video_url ?? null,
     video_transcript: row.video_transcript ?? null,
+    preview_shareable_link: row.preview_shareable_link ?? null,
     video_retention: normalizeRetention(row),
     ...taxonomia,
   };

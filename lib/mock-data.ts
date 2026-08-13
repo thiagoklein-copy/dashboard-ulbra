@@ -618,5 +618,6 @@ export const MOCK_INSIGHTS: MockRow[] = RAW_MOCK_INSIGHTS.map((row) => {
     video_storage_url: media?.video_storage_url ?? null,
     video_transcript: media?.video_transcript ?? null,
     video_retention: media?.video_retention ?? null,
+    preview_shareable_link: null,
   };
 });

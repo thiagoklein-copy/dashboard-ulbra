@@ -88,6 +88,7 @@ export function aggregateRows(
           campaign_name: row.campaign_name,
           adset_name: level === "campaign" ? null : row.adset_name,
           ad_name: level === "ad" ? row.ad_name : null,
+          ad_id: row.ad_id,
           spend: 0,
           impressions: 0,
           clicks: 0,
@@ -105,6 +106,7 @@ export function aggregateRows(
           video_storage_url: row.video_storage_url ?? null,
           video_transcript: row.video_transcript ?? null,
           link_url: row.link_url,
+          preview_shareable_link: row.preview_shareable_link ?? null,
           video_retention: row.video_retention,
           ad_count: 1,
           objective: row.objective,
@@ -141,6 +143,9 @@ export function aggregateRows(
         existing.base.video_storage_url = row.video_storage_url ?? null;
         existing.base.video_transcript = row.video_transcript ?? null;
         existing.base.link_url = row.link_url;
+        existing.base.preview_shareable_link =
+          row.preview_shareable_link ?? null;
+        existing.base.ad_id = row.ad_id;
       }
     }
   }
