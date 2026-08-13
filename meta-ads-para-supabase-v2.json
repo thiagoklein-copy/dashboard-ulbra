@@ -1,0 +1,856 @@
+{
+  "name": "Meta Ads → Supabase (ULBRA) v2",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "days",
+              "triggerAtHour": 6
+            }
+          ]
+        }
+      },
+      "id": "trigger-diario",
+      "name": "Trigger Diário (06h)",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -260,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "=https://graph.facebook.com/v21.0/act_{{$env.META_AD_ACCOUNT_ID}}/insights",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "level",
+              "value": "ad"
+            },
+            {
+              "name": "date_preset",
+              "value": "yesterday"
+            },
+            {
+              "name": "time_increment",
+              "value": "1"
+            },
+            {
+              "name": "limit",
+              "value": "500"
+            },
+            {
+              "name": "fields",
+              "value": "ad_id,ad_name,adset_id,adset_name,campaign_id,campaign_name,spend,impressions,clicks,ctr,cpc,cpm,objective,results,cost_per_result,actions,date_start,date_stop,video_play_actions,video_avg_time_watched_actions,video_p25_watched_actions,video_p50_watched_actions,video_p75_watched_actions,video_p95_watched_actions,video_p100_watched_actions"
+            },
+            {
+              "name": "access_token",
+              "value": "={{$env.META_ACCESS_TOKEN}}"
+            }
+          ]
+        },
+        "options": {
+          "pagination": {
+            "pagination": {
+              "paginationMode": "responseContainsNextURL",
+              "nextURL": "={{ $response.body.paging?.next }}",
+              "paginationCompleteWhen": "other",
+              "completeExpression": "={{ !$response.body.paging?.next }}",
+              "limitPagesFetched": true,
+              "maxRequests": 100
+            }
+          },
+          "response": {
+            "response": {
+              "neverError": false
+            }
+          }
+        }
+      },
+      "id": "http-insights",
+      "name": "Buscar Insights (Meta API)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -20,
+        140
+      ],
+      "onError": "stopWorkflow",
+      "retryOnFail": true,
+      "maxTries": 4,
+      "waitBetweenTries": 3000
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "data",
+        "options": {}
+      },
+      "id": "split-insights",
+      "name": "Separar Cada Ad",
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        200,
+        140
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "manual",
+        "assignments": {
+          "assignments": [
+            {
+              "name": "ad_id",
+              "value": "={{$json.ad_id}}",
+              "type": "string"
+            },
+            {
+              "name": "ad_name",
+              "value": "={{$json.ad_name}}",
+              "type": "string"
+            },
+            {
+              "name": "adset_id",
+              "value": "={{$json.adset_id}}",
+              "type": "string"
+            },
+            {
+              "name": "adset_name",
+              "value": "={{$json.adset_name}}",
+              "type": "string"
+            },
+            {
+              "name": "campaign_id",
+              "value": "={{$json.campaign_id}}",
+              "type": "string"
+            },
+            {
+              "name": "campaign_name",
+              "value": "={{$json.campaign_name}}",
+              "type": "string"
+            },
+            {
+              "name": "date_start",
+              "value": "={{$json.date_start}}",
+              "type": "string"
+            },
+            {
+              "name": "date_stop",
+              "value": "={{$json.date_stop}}",
+              "type": "string"
+            },
+            {
+              "name": "spend",
+              "value": "={{ Number($json.spend ?? 0) }}",
+              "type": "number"
+            },
+            {
+              "name": "impressions",
+              "value": "={{ Number($json.impressions ?? 0) }}",
+              "type": "number"
+            },
+            {
+              "name": "clicks",
+              "value": "={{ Number($json.clicks ?? 0) }}",
+              "type": "number"
+            },
+            {
+              "name": "ctr",
+              "value": "={{ Number($json.ctr ?? 0) }}",
+              "type": "number"
+            },
+            {
+              "name": "cpc",
+              "value": "={{ $json.cpc == null ? null : Number($json.cpc) }}",
+              "type": "number"
+            },
+            {
+              "name": "cpm",
+              "value": "={{ Number($json.cpm ?? 0) }}",
+              "type": "number"
+            },
+            {
+              "name": "objective",
+              "value": "={{ $json.objective ?? null }}",
+              "type": "string"
+            },
+            {
+              "name": "result_indicator",
+              "value": "={{ $json.results?.[0]?.indicator ?? null }}",
+              "type": "string"
+            },
+            {
+              "name": "results",
+              "value": "={{ Number($json.results?.[0]?.values?.[0]?.value ?? 0) }}",
+              "type": "number"
+            },
+            {
+              "name": "cost_per_result",
+              "value": "={{ $json.cost_per_result?.[0]?.values?.[0]?.value == null ? null : Number($json.cost_per_result[0].values[0].value) }}",
+              "type": "number"
+            },
+            {
+              "name": "raw_actions",
+              "value": "={{ JSON.stringify($json.actions ?? []) }}",
+              "type": "string"
+            },
+            {
+              "name": "video_plays",
+              "value": "={{ Number($json.video_play_actions?.[0]?.value ?? 0) || null }}",
+              "type": "number"
+            },
+            {
+              "name": "video_avg_watch_time_sec",
+              "value": "={{ Number($json.video_avg_time_watched_actions?.[0]?.value ?? 0) || null }}",
+              "type": "number"
+            },
+            {
+              "name": "video_p25",
+              "value": "={{ (() => { const p = Number($json.video_play_actions?.[0]?.value ?? 0); const w = Number($json.video_p25_watched_actions?.[0]?.value ?? 0); return p ? Math.round(w / p * 10000) / 100 : null; })() }}",
+              "type": "number"
+            },
+            {
+              "name": "video_p50",
+              "value": "={{ (() => { const p = Number($json.video_play_actions?.[0]?.value ?? 0); const w = Number($json.video_p50_watched_actions?.[0]?.value ?? 0); return p ? Math.round(w / p * 10000) / 100 : null; })() }}",
+              "type": "number"
+            },
+            {
+              "name": "video_p75",
+              "value": "={{ (() => { const p = Number($json.video_play_actions?.[0]?.value ?? 0); const w = Number($json.video_p75_watched_actions?.[0]?.value ?? 0); return p ? Math.round(w / p * 10000) / 100 : null; })() }}",
+              "type": "number"
+            },
+            {
+              "name": "video_p95",
+              "value": "={{ (() => { const p = Number($json.video_play_actions?.[0]?.value ?? 0); const w = Number($json.video_p95_watched_actions?.[0]?.value ?? 0); return p ? Math.round(w / p * 10000) / 100 : null; })() }}",
+              "type": "number"
+            },
+            {
+              "name": "video_p100",
+              "value": "={{ (() => { const p = Number($json.video_play_actions?.[0]?.value ?? 0); const w = Number($json.video_p100_watched_actions?.[0]?.value ?? 0); return p ? Math.round(w / p * 10000) / 100 : null; })() }}",
+              "type": "number"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "mapear-insights",
+      "name": "Mapear Campos",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        420,
+        140
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://{{$env.SUPABASE_PROJECT_REF}}.supabase.co/rest/v1/ad_insights?on_conflict=ad_id,date_start",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{$env.SUPABASE_SERVICE_ROLE_KEY}}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{$env.SUPABASE_SERVICE_ROLE_KEY}}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Prefer",
+              "value": "resolution=merge-duplicates,return=minimal"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json) }}",
+        "options": {}
+      },
+      "id": "supabase-insights",
+      "name": "Salvar em ad_insights",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        640,
+        140
+      ],
+      "onError": "stopWorkflow",
+      "retryOnFail": true,
+      "maxTries": 4,
+      "waitBetweenTries": 3000
+    },
+    {
+      "parameters": {
+        "mode": "manual",
+        "assignments": {
+          "assignments": [
+            {
+              "name": "ad_id",
+              "value": "={{ $json.id }}",
+              "type": "string"
+            },
+            {
+              "name": "ad_name",
+              "value": "={{ $json.name }}",
+              "type": "string"
+            },
+            {
+              "name": "campaign_name",
+              "value": "={{ $json.campaign?.name ?? null }}",
+              "type": "string"
+            },
+            {
+              "name": "headline",
+              "value": "={{ $json.creative?.asset_feed_spec?.titles?.[0]?.text || $json.creative?.title || null }}",
+              "type": "string"
+            },
+            {
+              "name": "primary_text",
+              "value": "={{ $json.creative?.asset_feed_spec?.bodies?.[0]?.text || $json.creative?.body || null }}",
+              "type": "string"
+            },
+            {
+              "name": "description",
+              "value": "={{ $json.creative?.asset_feed_spec?.descriptions?.[0]?.text || null }}",
+              "type": "string"
+            },
+            {
+              "name": "call_to_action",
+              "value": "={{ $json.creative?.asset_feed_spec?.call_to_action_types?.[0] || $json.creative?.call_to_action_type || null }}",
+              "type": "string"
+            },
+            {
+              "name": "link_url",
+              "value": "={{ $json.creative?.asset_feed_spec?.link_urls?.[0]?.website_url || $json.creative?.link_url || null }}",
+              "type": "string"
+            },
+            {
+              "name": "video_id",
+              "value": "={{ $json.creative?.asset_feed_spec?.videos?.[0]?.video_id || $json.creative?.video_id || null }}",
+              "type": "string"
+            },
+            {
+              "name": "image_hash",
+              "value": "={{ $json.creative?.asset_feed_spec?.images?.[0]?.hash || $json.creative?.image_hash || null }}",
+              "type": "string"
+            },
+            {
+              "name": "thumbnail_url",
+              "value": "={{ $json.creative?.thumbnail_url || $json.creative?.image_url || null }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "mapear-criativos",
+      "name": "Mapear Criativos",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1080,
+        360
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.image_hash }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "if-tem-hash",
+      "name": "Tem Hash de Imagem?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        1300,
+        360
+      ]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "=https://graph.facebook.com/v21.0/act_{{$env.META_AD_ACCOUNT_ID}}/adimages",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "hashes",
+              "value": "=[\"{{ $json.image_hash }}\"]"
+            },
+            {
+              "name": "fields",
+              "value": "hash,permalink_url"
+            },
+            {
+              "name": "access_token",
+              "value": "={{$env.META_ACCESS_TOKEN}}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "http-adimages",
+      "name": "Resolver Imagem (permalink)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1520,
+        280
+      ],
+      "onError": "continueRegularOutput",
+      "retryOnFail": true,
+      "maxTries": 4,
+      "waitBetweenTries": 3000
+    },
+    {
+      "parameters": {
+        "mode": "manual",
+        "assignments": {
+          "assignments": [
+            {
+              "name": "ad_id",
+              "value": "={{ $('Mapear Criativos').item.json.ad_id }}",
+              "type": "string"
+            },
+            {
+              "name": "ad_name",
+              "value": "={{ $('Mapear Criativos').item.json.ad_name }}",
+              "type": "string"
+            },
+            {
+              "name": "campaign_name",
+              "value": "={{ $('Mapear Criativos').item.json.campaign_name }}",
+              "type": "string"
+            },
+            {
+              "name": "headline",
+              "value": "={{ $('Mapear Criativos').item.json.headline }}",
+              "type": "string"
+            },
+            {
+              "name": "primary_text",
+              "value": "={{ $('Mapear Criativos').item.json.primary_text }}",
+              "type": "string"
+            },
+            {
+              "name": "description",
+              "value": "={{ $('Mapear Criativos').item.json.description }}",
+              "type": "string"
+            },
+            {
+              "name": "call_to_action",
+              "value": "={{ $('Mapear Criativos').item.json.call_to_action }}",
+              "type": "string"
+            },
+            {
+              "name": "link_url",
+              "value": "={{ $('Mapear Criativos').item.json.link_url }}",
+              "type": "string"
+            },
+            {
+              "name": "video_id",
+              "value": "={{ $('Mapear Criativos').item.json.video_id }}",
+              "type": "string"
+            },
+            {
+              "name": "image_url",
+              "value": "={{ $json.data?.[0]?.permalink_url || $('Mapear Criativos').item.json.thumbnail_url || null }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "montar-criativo-com-imagem",
+      "name": "Montar Criativo (com permalink)",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1740,
+        280
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "manual",
+        "assignments": {
+          "assignments": [
+            {
+              "name": "ad_id",
+              "value": "={{ $json.ad_id }}",
+              "type": "string"
+            },
+            {
+              "name": "ad_name",
+              "value": "={{ $json.ad_name }}",
+              "type": "string"
+            },
+            {
+              "name": "campaign_name",
+              "value": "={{ $json.campaign_name }}",
+              "type": "string"
+            },
+            {
+              "name": "headline",
+              "value": "={{ $json.headline }}",
+              "type": "string"
+            },
+            {
+              "name": "primary_text",
+              "value": "={{ $json.primary_text }}",
+              "type": "string"
+            },
+            {
+              "name": "description",
+              "value": "={{ $json.description }}",
+              "type": "string"
+            },
+            {
+              "name": "call_to_action",
+              "value": "={{ $json.call_to_action }}",
+              "type": "string"
+            },
+            {
+              "name": "link_url",
+              "value": "={{ $json.link_url }}",
+              "type": "string"
+            },
+            {
+              "name": "video_id",
+              "value": "={{ $json.video_id }}",
+              "type": "string"
+            },
+            {
+              "name": "image_url",
+              "value": "={{ $json.thumbnail_url || null }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "montar-criativo-sem-imagem",
+      "name": "Montar Criativo (sem hash)",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1520,
+        470
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://{{$env.SUPABASE_PROJECT_REF}}.supabase.co/rest/v1/ad_creatives?on_conflict=ad_id",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{$env.SUPABASE_SERVICE_ROLE_KEY}}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{$env.SUPABASE_SERVICE_ROLE_KEY}}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Prefer",
+              "value": "resolution=merge-duplicates,return=minimal"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json) }}",
+        "options": {}
+      },
+      "id": "supabase-criativos",
+      "name": "Salvar em ad_creatives",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1960,
+        360
+      ],
+      "onError": "stopWorkflow",
+      "retryOnFail": true,
+      "maxTries": 4,
+      "waitBetweenTries": 3000
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "rodar-meta-ads",
+        "options": {}
+      },
+      "id": "webhook-manual",
+      "name": "Disparo Manual (Webhook)",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -260,
+        620
+      ],
+      "webhookId": "a7c3e1f0-4b2d-4e8a-9c1f-2d5e8b3a7c40"
+    },
+    {
+      "parameters": {
+        "jsCode": "const ids = [...new Set($input.all().map(i => i.json.ad_id).filter(Boolean))];\nconst out = [];\nfor (let i = 0; i < ids.length; i += 50) {\n  const lote = ids.slice(i, i + 50);\n  out.push({ json: {\n    filtro: JSON.stringify([{ field: 'id', operator: 'IN', value: lote }]),\n    qtd: lote.length,\n  }});\n}\nreturn out;"
+      },
+      "id": "coletar-ids",
+      "name": "Coletar IDs (lotes de 50)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        420,
+        360
+      ]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "=https://graph.facebook.com/v21.0/act_{{$env.META_AD_ACCOUNT_ID}}/ads",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "fields",
+              "value": "id,name,campaign{name},creative{id,thumbnail_url,object_type,title,body,image_url,image_hash,video_id,link_url,call_to_action_type,asset_feed_spec}"
+            },
+            {
+              "name": "limit",
+              "value": "50"
+            },
+            {
+              "name": "filtering",
+              "value": "={{ $json.filtro }}"
+            },
+            {
+              "name": "access_token",
+              "value": "={{$env.META_ACCESS_TOKEN}}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "http-criativos-ids",
+      "name": "Buscar Criativos (por IDs)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        640,
+        360
+      ],
+      "retryOnFail": true,
+      "maxTries": 4,
+      "waitBetweenTries": 3000,
+      "onError": "stopWorkflow"
+    },
+    {
+      "parameters": {
+        "jsCode": "const out = [];\nfor (const item of $input.all()) {\n  for (const ad of (item.json.data || [])) out.push({ json: ad });\n}\nreturn out;"
+      },
+      "id": "achatar-criativos",
+      "name": "Achatar Resposta",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        860,
+        360
+      ]
+    }
+  ],
+  "connections": {
+    "Trigger Diário (06h)": {
+      "main": [
+        [
+          {
+            "node": "Buscar Insights (Meta API)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Buscar Insights (Meta API)": {
+      "main": [
+        [
+          {
+            "node": "Separar Cada Ad",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Separar Cada Ad": {
+      "main": [
+        [
+          {
+            "node": "Mapear Campos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mapear Campos": {
+      "main": [
+        [
+          {
+            "node": "Salvar em ad_insights",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Coletar IDs (lotes de 50)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mapear Criativos": {
+      "main": [
+        [
+          {
+            "node": "Tem Hash de Imagem?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tem Hash de Imagem?": {
+      "main": [
+        [
+          {
+            "node": "Resolver Imagem (permalink)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Montar Criativo (sem hash)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Resolver Imagem (permalink)": {
+      "main": [
+        [
+          {
+            "node": "Montar Criativo (com permalink)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Montar Criativo (com permalink)": {
+      "main": [
+        [
+          {
+            "node": "Salvar em ad_creatives",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Montar Criativo (sem hash)": {
+      "main": [
+        [
+          {
+            "node": "Salvar em ad_creatives",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Disparo Manual (Webhook)": {
+      "main": [
+        [
+          {
+            "node": "Buscar Insights (Meta API)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Coletar IDs (lotes de 50)": {
+      "main": [
+        [
+          {
+            "node": "Buscar Criativos (por IDs)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Buscar Criativos (por IDs)": {
+      "main": [
+        [
+          {
+            "node": "Achatar Resposta",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Achatar Resposta": {
+      "main": [
+        [
+          {
+            "node": "Mapear Criativos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  }
+}
