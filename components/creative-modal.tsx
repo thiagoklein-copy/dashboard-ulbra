@@ -29,10 +29,10 @@ export function CreativeModal({
 }: CreativeModalProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto p-0 sm:max-w-4xl">
+      <DialogContent className="flex max-h-[min(92vh,960px)] flex-col gap-0 overflow-hidden p-0 sm:max-w-4xl">
         {row && (
           <>
-            <DialogHeader className="border-b px-5 py-4 pr-12 text-left">
+            <DialogHeader className="shrink-0 border-b px-5 py-4 pr-12 text-left">
               <div className="flex items-start gap-3">
                 <CreativeThumbnail
                   imageUrl={row.image_url}
@@ -75,7 +75,7 @@ export function CreativeModal({
               </div>
             </DialogHeader>
 
-            <div className="px-5 py-4">
+            <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4">
               <CreativeExpanded
                 row={row}
                 showAggregateHint={level !== "ad"}

@@ -75,13 +75,13 @@ export function CreativeExpanded({
   return (
     <div className="space-y-5">
       <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
-        {/* Mídia — esquerda (topo no mobile) */}
-        <div className="overflow-hidden rounded-xl border bg-muted">
-          <div className="relative aspect-[4/5] w-full bg-black/5">
+        {/* Mídia — esquerda (topo no mobile); object-contain para não cortar o criativo */}
+        <div className="rounded-xl border bg-muted/40 p-2">
+          <div className="relative flex min-h-[220px] max-h-[min(70vh,760px)] w-full items-center justify-center overflow-hidden rounded-lg bg-black/5">
             {videoSrc ? (
               <video
                 key={videoSrc}
-                className="size-full bg-black object-contain"
+                className="max-h-[min(70vh,760px)] w-full bg-black object-contain"
                 controls
                 playsInline
                 preload="metadata"
@@ -93,10 +93,10 @@ export function CreativeExpanded({
               <img
                 src={proxyImagem(row.image_url) ?? row.image_url}
                 alt={row.name}
-                className="size-full object-cover"
+                className="max-h-[min(70vh,760px)] w-full object-contain"
               />
             ) : (
-              <div className="flex size-full flex-col items-center justify-center gap-2 text-muted-foreground">
+              <div className="flex min-h-[220px] w-full flex-col items-center justify-center gap-2 text-muted-foreground">
                 <ImageIcon className="size-8 opacity-50" />
                 <p className="text-xs">Sem mídia disponível</p>
               </div>
