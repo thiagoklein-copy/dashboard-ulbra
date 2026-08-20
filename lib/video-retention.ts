@@ -1,4 +1,8 @@
-import type { RetentionDiagnosis, VideoRetention } from "@/lib/types";
+import type {
+  RetentionDiagnosis,
+  VideoDesempenho,
+  VideoRetention,
+} from "@/lib/types";
 
 /** Agrega retenção ponderando pelos plays (não faz média simples dos %). */
 export function mergeVideoRetention(
@@ -100,4 +104,92 @@ export function formatWatchTime(seconds: number): string {
   const m = Math.floor(seconds / 60);
   const s = Math.round(seconds % 60);
   return `${m}m ${s.toString().padStart(2, "0")}s`;
+}
+
+/**
+ * Junta o painel de vídeo de várias linhas-dia num só.
+ *
+ * A curva vem do Meta como 22 pontos em % de quem ainda assiste, sempre
+ * começando em 100. Como é percentual, somar os dias não faz sentido: cada
+ * ponto é ponderado pelas reproduções daquele dia, igual ao resto do arquivo.
+ *
+ * ThruPlay pode vir nulo num dia sem nenhum (o Meta omite a ação em vez de
+ * mandar zero), então a retenção usa só os dias que reportaram — dividir pelo
+ * total de plays incluindo esses dias empurraria a taxa para baixo.
+ */
+export function mergeVideoDesempenho(
+  items: Array<VideoDesempenho | null | undefined>
+): VideoDesempenho | null {
+  const validos = items.filter(
+    (d): d is VideoDesempenho => Boolean(d && d.reproducoes > 0)
+  );
+  if (!validos.length) return null;
+
+  const reproducoes = validos.reduce((s, d) => s + d.reproducoes, 0);
+  const ponderado = (pick: (d: VideoDesempenho) => number) =>
+    validos.reduce((s, d) => s + pick(d) * d.reproducoes, 0) / reproducoes;
+
+  const comCurva = validos.filter((d) => d.curva.length === PONTOS_CURVA);
+  const pesoCurva = comCurva.reduce((s, d) => s + d.reproducoes, 0);
+  const curva = pesoCurva
+    ? Array.from({ length: PONTOS_CURVA }, (_, i) =>
+        round1(
+          comCurva.reduce((s, d) => s + d.curva[i] * d.reproducoes, 0) /
+            pesoCurva
+        )
+      )
+    : [];
+
+  return {
+    reproducoes,
+    tempoMedioSec: ponderado((d) => d.tempoMedioSec),
+    atencaoInicial: curva.length ? curva[INDICE_ATENCAO] : 0,
+    retencao: ponderado((d) => d.retencao),
+    curva,
+  };
+}
+
+/** O Meta devolve a curva sempre com 22 pontos, do início ao fim do vídeo. */
+export const PONTOS_CURVA = 22;
+
+/**
+ * A "taxa de atenção inicial" do painel do Meta é o 4º ponto da curva.
+ *
+ * Não é dedução: conferimos contra três vídeos de durações diferentes e o
+ * número bateu exato nos três (18%, 16% e 20%).
+ */
+export const INDICE_ATENCAO = 3;
+
+/** Constrói o painel a partir das colunas cruas de uma linha-dia. */
+export function montarDesempenho(dados: {
+  plays: number | null | undefined;
+  tempoMedioSec: number | null | undefined;
+  thruplay: number | null | undefined;
+  curva: number[] | null | undefined;
+}): VideoDesempenho | null {
+  const reproducoes = Number(dados.plays ?? 0);
+  if (!reproducoes) return null;
+
+  const curva =
+    Array.isArray(dados.curva) && dados.curva.length === PONTOS_CURVA
+      ? dados.curva.map(Number)
+      : [];
+
+  return {
+    reproducoes,
+    tempoMedioSec: Number(dados.tempoMedioSec ?? 0),
+    atencaoInicial: curva.length ? curva[INDICE_ATENCAO] : 0,
+    // ThruPlay = assistiu 15s (ou o vídeo inteiro, se for mais curto).
+    retencao:
+      dados.thruplay == null ? 0 : (Number(dados.thruplay) / reproducoes) * 100,
+    curva,
+  };
+}
+
+/** Pontos do gráfico: o eixo é % da duração, não segundos. */
+export function pontosCurva(d: VideoDesempenho) {
+  return d.curva.map((retido, i) => ({
+    pct: Math.round((i / (PONTOS_CURVA - 1)) * 100),
+    retido,
+  }));
 }

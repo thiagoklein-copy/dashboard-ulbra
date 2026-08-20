@@ -34,7 +34,7 @@
             },
             {
               "name": "date_preset",
-              "value": "yesterday"
+              "value": "last_3d"
             },
             {
               "name": "time_increment",
@@ -46,7 +46,7 @@
             },
             {
               "name": "fields",
-              "value": "ad_id,ad_name,adset_id,adset_name,campaign_id,campaign_name,spend,impressions,clicks,ctr,cpc,cpm,objective,results,cost_per_result,actions,date_start,date_stop,video_play_actions,video_avg_time_watched_actions,video_p25_watched_actions,video_p50_watched_actions,video_p75_watched_actions,video_p95_watched_actions,video_p100_watched_actions"
+              "value": "ad_id,ad_name,adset_id,adset_name,campaign_id,campaign_name,spend,impressions,clicks,reach,frequency,unique_clicks,inline_link_clicks,ctr,cpc,cpm,objective,results,cost_per_result,actions,date_start,date_stop,video_play_actions,video_avg_time_watched_actions,video_p25_watched_actions,video_p50_watched_actions,video_p75_watched_actions,video_p95_watched_actions,video_p100_watched_actions,video_play_curve_actions,video_thruplay_watched_actions"
             },
             {
               "name": "access_token",
@@ -160,6 +160,26 @@
               "type": "number"
             },
             {
+              "name": "reach",
+              "value": "={{ Number($json.reach ?? 0) }}",
+              "type": "number"
+            },
+            {
+              "name": "frequency",
+              "value": "={{ Number($json.frequency ?? 0) }}",
+              "type": "number"
+            },
+            {
+              "name": "unique_clicks",
+              "value": "={{ Number($json.unique_clicks ?? 0) }}",
+              "type": "number"
+            },
+            {
+              "name": "inline_link_clicks",
+              "value": "={{ Number($json.inline_link_clicks ?? 0) }}",
+              "type": "number"
+            },
+            {
               "name": "ctr",
               "value": "={{ Number($json.ctr ?? 0) }}",
               "type": "number"
@@ -232,6 +252,16 @@
             {
               "name": "video_p100",
               "value": "={{ (() => { const p = Number($json.video_play_actions?.[0]?.value ?? 0); const w = Number($json.video_p100_watched_actions?.[0]?.value ?? 0); return p ? Math.round(w / p * 10000) / 100 : null; })() }}",
+              "type": "number"
+            },
+            {
+              "name": "video_play_curve",
+              "value": "={{ $json.video_play_curve_actions?.[0]?.value ?? null }}",
+              "type": "array"
+            },
+            {
+              "name": "video_thruplay",
+              "value": "={{ Number($json.video_thruplay_watched_actions?.[0]?.value ?? 0) || null }}",
               "type": "number"
             }
           ]
@@ -338,11 +368,6 @@
             {
               "name": "video_id",
               "value": "={{ $json.creative?.asset_feed_spec?.videos?.[0]?.video_id || $json.creative?.video_id || null }}",
-              "type": "string"
-            },
-            {
-              "name": "preview_shareable_link",
-              "value": "={{ $json.preview_shareable_link || null }}",
               "type": "string"
             },
             {
@@ -486,11 +511,6 @@
               "type": "string"
             },
             {
-              "name": "preview_shareable_link",
-              "value": "={{ $('Mapear Criativos').item.json.preview_shareable_link || null }}",
-              "type": "string"
-            },
-            {
               "name": "image_url",
               "value": "={{ $json.data?.[0]?.permalink_url || $('Mapear Criativos').item.json.thumbnail_url || null }}",
               "type": "string"
@@ -556,11 +576,6 @@
             {
               "name": "video_id",
               "value": "={{ $json.video_id }}",
-              "type": "string"
-            },
-            {
-              "name": "preview_shareable_link",
-              "value": "={{ $json.preview_shareable_link || null }}",
               "type": "string"
             },
             {
@@ -662,7 +677,7 @@
           "parameters": [
             {
               "name": "fields",
-              "value": "id,name,campaign{name},preview_shareable_link,creative{id,thumbnail_url,object_type,title,body,image_url,image_hash,video_id,link_url,call_to_action_type,asset_feed_spec}"
+              "value": "id,name,campaign{name},creative{id,thumbnail_url,object_type,title,body,image_url,image_hash,video_id,link_url,call_to_action_type,asset_feed_spec}"
             },
             {
               "name": "limit",

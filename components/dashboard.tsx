@@ -240,6 +240,7 @@ export function Dashboard() {
             sortDir={params.sortDir}
             onSort={handleSort}
             onPageChange={(page) => setParams({ page })}
+            onPageSizeChange={(pageSize) => setParams({ pageSize, page: 1 })}
           />
         </div>
       </div>

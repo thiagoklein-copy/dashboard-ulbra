@@ -24,6 +24,9 @@ import type {
 } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
+/** Com centenas de anúncios, 25 por página esconde os melhores criativos. */
+const PAGE_SIZES = [25, 50, 100, 200, 400] as const;
+
 interface DataTableProps {
   rows: AggregatedRow[];
   columns: ColumnKey[];
@@ -36,6 +39,7 @@ interface DataTableProps {
   sortDir: SortDirection | null;
   onSort: (key: MetricKey) => void;
   onPageChange: (page: number) => void;
+  onPageSizeChange: (size: number) => void;
 }
 
 function cellValue(row: AggregatedRow, key: ColumnKey): string {
@@ -71,6 +75,7 @@ export function DataTable({
   sortDir,
   onSort,
   onPageChange,
+  onPageSizeChange,
 }: DataTableProps) {
   const [selected, setSelected] = useState<AggregatedRow | null>(null);
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
@@ -219,11 +224,31 @@ export function DataTable({
       </div>
 
       <div className="flex items-center justify-between gap-3 text-sm">
-        <p className="text-muted-foreground">
-          {total === 0
-            ? "0 resultados"
-            : `${(page - 1) * pageSize + 1}–${Math.min(page * pageSize, total)} de ${total}`}
-        </p>
+        <div className="flex flex-wrap items-center gap-3">
+          <p className="text-muted-foreground">
+            {total === 0
+              ? "0 resultados"
+              : `${(page - 1) * pageSize + 1}–${Math.min(page * pageSize, total)} de ${total}`}
+          </p>
+          <div className="flex items-center gap-1">
+            <span className="text-xs text-muted-foreground">Mostrar</span>
+            {PAGE_SIZES.map((n) => (
+              <button
+                key={n}
+                type="button"
+                onClick={() => onPageSizeChange(n)}
+                className={cn(
+                  "rounded-full px-2.5 py-1 text-xs font-medium tabular-nums transition-colors",
+                  pageSize === n
+                    ? "bg-black text-white dark:bg-white dark:text-black"
+                    : "bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-white/5 dark:text-gray-300 dark:hover:bg-white/10"
+                )}
+              >
+                {n}
+              </button>
+            ))}
+          </div>
+        </div>
         <div className="flex items-center gap-2">
           <Button
             variant="outline"

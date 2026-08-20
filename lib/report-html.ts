@@ -41,7 +41,7 @@ function kpi(rotulo: string, valor: string, c: Comparativo, anterior: string) {
     </div>`;
 }
 
-function linhasRanking(itens: LinhaRanking[], unidade: string) {
+function linhasRanking(itens: LinhaRanking[]) {
   if (!itens.length) return `<tr><td colspan="7" class="vazio">Sem dados no período</td></tr>`;
   return itens
     .map(
@@ -95,7 +95,17 @@ export function renderRelatorioHtml(r: RelatorioMidia): string {
       ? "Campanhas de conversão"
       : r.tipo === "branding"
         ? "Campanhas de branding"
-        : "Todas as campanhas";
+        : "Campanhas de conversão";
+
+  const notaBranding = r.brandingAparte
+    ? `<p class="nota-branding">
+         O resumo cobre apenas campanhas de conversão. As de branding somam
+         <b>${money(r.brandingAparte.investimento)}</b> e
+         <b>${int(r.brandingAparte.resultados)}</b>
+         ${esc(r.brandingAparte.indicador?.replace(/_/g, " ") ?? "resultados")},
+         que contam ação diferente e por isso não entram nos números acima.
+       </p>`
+    : "";
 
   return `<!DOCTYPE html>
 <html lang="pt-BR">
@@ -176,6 +186,10 @@ export function renderRelatorioHtml(r: RelatorioMidia): string {
 
   .conclusoes { background: #fff; border-radius: 14px; padding: 6px 20px 14px; }
   .conclusoes li { margin: 11px 0; font-size: 0.88rem; line-height: 1.55; }
+  .nota-branding { background: #fff; border-left: 3px solid #7c3aed; border-radius: 12px;
+                   padding: 12px 16px; margin-top: 12px; font-size: 0.82rem;
+                   color: #4b5563; line-height: 1.55; }
+  .nota-branding b { color: #18181b; font-variant-numeric: tabular-nums; }
   .metodologia { font-size: 0.76rem; color: #6b7280; line-height: 1.6; }
   .metodologia li { margin: 6px 0; }
   footer { margin-top: 36px; padding-top: 14px; border-top: 1px solid #e5e3dd;
@@ -209,6 +223,7 @@ export function renderRelatorioHtml(r: RelatorioMidia): string {
   ${kpi("Custo por resultado", money(r.custoPorResultado.atual), r.custoPorResultado, money(r.custoPorResultado.anterior))}
   ${kpi("Impressões", int(r.impressoes.atual), r.impressoes, int(r.impressoes.anterior))}
 </div>
+${notaBranding}
 
 <h2><span class="n">2</span>Funil de conversão</h2>
 <p class="legenda">Separar as duas taxas mostra se a perda está no criativo ou na página de destino.</p>
@@ -239,7 +254,7 @@ export function renderRelatorioHtml(r: RelatorioMidia): string {
     <th class="n">Custo/result.</th><th class="n">Conv. anúncio</th>
     <th class="n">Conv. página</th><th class="n">vs. anterior</th>
   </tr></thead>
-  <tbody>${linhasRanking(r.porCurso, unidade)}</tbody>
+  <tbody>${linhasRanking(r.porCurso)}</tbody>
 </table>
 
 <h2><span class="n">4</span>Desempenho por praça</h2>
@@ -249,7 +264,7 @@ export function renderRelatorioHtml(r: RelatorioMidia): string {
     <th class="n">Custo/result.</th><th class="n">Conv. anúncio</th>
     <th class="n">Conv. página</th><th class="n">vs. anterior</th>
   </tr></thead>
-  <tbody>${linhasRanking(r.porPraca, unidade)}</tbody>
+  <tbody>${linhasRanking(r.porPraca)}</tbody>
 </table>
 
 <h2><span class="n">5</span>Anúncios mais eficientes</h2>

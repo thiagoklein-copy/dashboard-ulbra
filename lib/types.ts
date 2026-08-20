@@ -19,6 +19,18 @@ export type MetricKey =
 
 export type ColumnKey = MetricKey | "headline" | "primary_text" | "name";
 
+/** Painel de vídeo do Meta, replicado a partir da API. */
+export interface VideoDesempenho {
+  reproducoes: number;
+  tempoMedioSec: number;
+  /** 4o ponto da curva — e como o Meta calcula a "taxa de atencao inicial" */
+  atencaoInicial: number;
+  /** ThruPlay sobre reproducoes */
+  retencao: number;
+  /** 22 pontos, do inicio ao fim do video, em % de quem ainda assiste */
+  curva: number[];
+}
+
 /** Quartis de retenção no estilo Meta Ads (0–100% de quem iniciou o vídeo). */
 export interface VideoRetention {
   /** Quantidade de plays / video views no período */
@@ -77,11 +89,9 @@ export interface AdInsightRow {
   video_storage_url: string | null;
   /** Transcrição do áudio/vídeo (quando processada) */
   video_transcript: string | null;
-  /** URL de destino do anúncio (landing / vestibular) */
   link_url: string | null;
-  /** Preview oficial do anúncio no Meta (não é a landing) */
-  preview_shareable_link: string | null;
   video_retention: VideoRetention | null;
+  video_desempenho: VideoDesempenho | null;
   /** Objetivo da campanha no Meta (OUTCOME_LEADS, LINK_CLICKS…) */
   objective: string | null;
   /** Qual ação o Meta contou como resultado */
@@ -99,7 +109,6 @@ export interface AggregatedRow {
   campaign_name: string;
   adset_name: string | null;
   ad_name: string | null;
-  ad_id: string;
   spend: number;
   impressions: number;
   clicks: number;
@@ -117,8 +126,8 @@ export interface AggregatedRow {
   video_storage_url: string | null;
   video_transcript: string | null;
   link_url: string | null;
-  preview_shareable_link: string | null;
   video_retention: VideoRetention | null;
+  video_desempenho: VideoDesempenho | null;
   ad_count: number;
   objective: string | null;
   result_indicator: string | null;

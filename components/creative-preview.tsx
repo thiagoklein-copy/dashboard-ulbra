@@ -1,13 +1,9 @@
 "use client";
 
-import { ExternalLink, ImageIcon, Play } from "lucide-react";
+import { ImageIcon, Play } from "lucide-react";
+import { VideoDesempenhoPanel } from "@/components/video-desempenho-panel";
 import { VideoRetentionChart } from "@/components/video-retention-chart";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import {
-  facebookVideoEmbedUrl,
-  facebookWatchUrl,
-  resolveAdPreviewUrl,
-} from "@/lib/ad-links";
 import type { AggregatedRow } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -76,48 +72,42 @@ export function CreativeExpanded({
   const videoSrc = row.video_storage_url?.trim() || null;
   const hasTranscript = Boolean(row.video_transcript?.trim());
   const showTranscriptPending = Boolean(row.video_id) && !hasTranscript;
-  const adPreviewUrl = resolveAdPreviewUrl(
-    row.preview_shareable_link,
-    row.ad_id
-  );
-  const videoWatchUrl = row.video_id ? facebookWatchUrl(row.video_id) : null;
-  const landingUrl = row.link_url?.trim() || null;
 
   return (
     <div className="space-y-5">
       <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
-        {/* Mídia — esquerda (topo no mobile); object-contain para não cortar o criativo */}
-        <div className="rounded-xl border bg-muted/40 p-2">
-          <div className="relative flex min-h-[220px] max-h-[min(70vh,760px)] w-full items-center justify-center overflow-hidden rounded-lg bg-black/5">
+        {/* Mídia — esquerda (topo no mobile) */}
+        <div className="overflow-hidden rounded-xl border bg-muted">
+          <div className="relative aspect-[4/5] w-full bg-black/5">
             {videoSrc ? (
               <video
                 key={videoSrc}
-                className="max-h-[min(70vh,760px)] w-full bg-black object-contain"
+                className="size-full bg-black object-contain"
                 controls
                 playsInline
                 preload="metadata"
                 poster={proxyImagem(row.image_url) ?? undefined}
                 src={videoSrc}
               />
-            ) : row.video_id ? (
-              <iframe
-                title={`Vídeo do anúncio ${row.name}`}
-                src={facebookVideoEmbedUrl(row.video_id)}
-                className="aspect-[4/5] w-full max-h-[min(70vh,760px)] border-0 bg-black"
-                allow="autoplay; clipboard-write; encrypted-media; picture-in-picture"
-                allowFullScreen
-              />
             ) : row.image_url ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
                 src={proxyImagem(row.image_url) ?? row.image_url}
                 alt={row.name}
-                className="max-h-[min(70vh,760px)] w-full object-contain"
+                className="size-full object-cover"
               />
             ) : (
-              <div className="flex min-h-[220px] w-full flex-col items-center justify-center gap-2 text-muted-foreground">
+              <div className="flex size-full flex-col items-center justify-center gap-2 text-muted-foreground">
                 <ImageIcon className="size-8 opacity-50" />
                 <p className="text-xs">Sem mídia disponível</p>
+              </div>
+            )}
+
+            {!videoSrc && row.video_id && row.image_url && (
+              <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-black/25">
+                <div className="flex size-12 items-center justify-center rounded-full bg-white/90 shadow">
+                  <Play className="size-5 fill-black text-black" />
+                </div>
               </div>
             )}
           </div>
@@ -167,53 +157,18 @@ export function CreativeExpanded({
               </p>
             </div>
 
-            {adPreviewUrl && (
+            {row.link_url && (
               <div>
                 <p className="mb-1 text-xs font-medium tracking-wide text-muted-foreground uppercase">
-                  Ver anúncio
+                  Link
                 </p>
                 <a
-                  href={adPreviewUrl}
+                  href={row.link_url}
                   target="_blank"
                   rel="noreferrer"
-                  className="inline-flex items-center gap-1.5 text-sm font-medium text-blue-600 hover:underline"
+                  className="break-all text-sm text-blue-600 hover:underline"
                 >
-                  Abrir no Gerenciador de Anúncios
-                  <ExternalLink className="size-3.5" />
-                </a>
-              </div>
-            )}
-
-            {videoWatchUrl && (
-              <div>
-                <p className="mb-1 text-xs font-medium tracking-wide text-muted-foreground uppercase">
-                  Vídeo
-                </p>
-                <a
-                  href={videoWatchUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="inline-flex items-center gap-1.5 text-sm font-medium text-blue-600 hover:underline"
-                >
-                  Abrir vídeo no Facebook
-                  <ExternalLink className="size-3.5" />
-                </a>
-              </div>
-            )}
-
-            {landingUrl && (
-              <div>
-                <p className="mb-1 text-xs font-medium tracking-wide text-muted-foreground uppercase">
-                  Página de destino
-                </p>
-                <a
-                  href={landingUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="inline-flex items-center gap-1.5 break-all text-sm text-blue-600 hover:underline"
-                >
-                  {landingUrl}
-                  <ExternalLink className="size-3.5 shrink-0" />
+                  {row.link_url}
                 </a>
               </div>
             )}
@@ -221,12 +176,16 @@ export function CreativeExpanded({
 
           {showAggregateHint && (
             <p className="text-xs text-muted-foreground">
-              Agregado com {row.ad_count} linha(s) de insight. Mude o nível para
+              Agrega {row.ad_count} anúncio(s). Mude o nível para
               &quot;Anúncios&quot; para ver cada criativo.
             </p>
           )}
         </div>
       </div>
+
+      {row.video_desempenho?.curva.length ? (
+        <VideoDesempenhoPanel desempenho={row.video_desempenho} />
+      ) : null}
 
       {row.video_retention && (
         <VideoRetentionChart retention={row.video_retention} />

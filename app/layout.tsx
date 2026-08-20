@@ -28,17 +28,19 @@ export default function RootLayout({
     <html
       lang="pt-BR"
       className={`${roboto.variable} ${robotoMono.variable} h-full antialiased`}
+      // O script abaixo altera a classe do <html> antes da hidratação; sem
+      // isto o React acusa divergência entre servidor e cliente.
+      suppressHydrationWarning
     >
-      <head>
-        {/* Aplica o tema antes da pintura — sem isso a tela pisca em claro
-            antes do React hidratar. */}
+      <body className="min-h-full flex flex-col font-sans">
+        {/* Aplica o tema antes da primeira pintura, senão a tela pisca em
+            claro até o React hidratar. Fica no body porque o App Router
+            monta o <head> por conta própria. */}
         <script
           dangerouslySetInnerHTML={{
             __html: `(function(){try{var t=localStorage.getItem('ulbra-tema')||(window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');if(t==='dark')document.documentElement.classList.add('dark');document.documentElement.style.colorScheme=t;}catch(e){}})();`,
           }}
         />
-      </head>
-      <body className="min-h-full flex flex-col font-sans">
         <Providers>{children}</Providers>
       </body>
     </html>

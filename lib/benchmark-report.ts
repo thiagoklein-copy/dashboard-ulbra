@@ -37,6 +37,8 @@ export interface RelatorioMidia {
   filtros: string[];
   tipo: "todos" | "conversao" | "branding";
   indicador: string | null;
+  /** Sem filtro de tipo, o resumo cobre só conversão — branding vem aqui. */
+  brandingAparte: { investimento: number; resultados: number; indicador: string | null } | null;
 
   investimento: Comparativo;
   resultados: Comparativo;
@@ -210,8 +212,17 @@ export function construirRelatorio(opts: {
   filtros: string[];
 }): RelatorioMidia {
   const { atual, anterior } = opts;
-  const a = atual.summary;
-  const b = anterior.summary;
+
+  /**
+   * Sem filtro de tipo, `summary` soma leads com engajamento e visita de
+   * perfil — no período de agosto/2026 isso dava 76.456 "resultados" a
+   * R$ 0,71, um número sem significado. Quando o relatório sai sem filtro,
+   * o resumo passa a usar só o bloco de conversão, e o de branding aparece
+   * à parte na seção própria.
+   */
+  const usarSoConversao = opts.tipo === "todos";
+  const a = usarSoConversao ? atual.kindTotals.conversao : atual.summary;
+  const b = usarSoConversao ? anterior.kindTotals.conversao : anterior.summary;
 
   const dias =
     Math.round(
@@ -239,7 +250,17 @@ export function construirRelatorio(opts: {
     periodoAnterior: { de: opts.anteriorDe, ate: opts.anteriorAte },
     filtros: opts.filtros,
     tipo: opts.tipo,
-    indicador: atual.funil.indicador,
+    indicador: usarSoConversao
+      ? atual.kindTotals.conversao.indicador
+      : atual.funil.indicador,
+    brandingAparte:
+      usarSoConversao && atual.kindTotals.branding.spend > 0
+        ? {
+            investimento: atual.kindTotals.branding.spend,
+            resultados: atual.kindTotals.branding.results,
+            indicador: atual.kindTotals.branding.indicador,
+          }
+        : null,
 
     investimento: comparar(a.spend, b.spend),
     resultados: comparar(a.results, b.results),

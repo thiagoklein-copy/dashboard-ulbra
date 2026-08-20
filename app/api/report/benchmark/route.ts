@@ -56,14 +56,14 @@ export async function GET(request: NextRequest) {
       sortBy: "cost_per_result" as const,
       sortDir: "asc" as const,
       page: 1,
-      // Alto o bastante para o relatório ver todos os anúncios do período,
-      // não só a primeira página como fazia antes.
-      pageSize: 100,
+      // O relatório ordena e corta por conta própria; se a página truncar,
+      // os "mais caros" viram os mais caros entre os mais baratos.
+      pageSize: 100_000,
     };
 
     const [atual, anterior] = await Promise.all([
-      getInsights({ ...base, dateFrom, dateTo, pageSize: 500 }),
-      getInsights({ ...base, dateFrom: anteriorDe, dateTo: anteriorAte, pageSize: 500 }),
+      getInsights({ ...base, dateFrom, dateTo }),
+      getInsights({ ...base, dateFrom: anteriorDe, dateTo: anteriorAte }),
     ]);
 
     const filtros: string[] = [];

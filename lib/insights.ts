@@ -7,6 +7,7 @@ import {
 import { classificarCampanha } from "@/lib/campaign-taxonomy";
 import { MOCK_INSIGHTS } from "@/lib/mock-data";
 import { supabase } from "@/lib/supabase";
+import { montarDesempenho } from "@/lib/video-retention";
 import type {
   AdInsightRow,
   BreakdownItem,
@@ -22,6 +23,10 @@ function agrupar(
   chave: (r: AdInsightRow) => string
 ): BreakdownItem[] {
   const mapa = new Map<string, BreakdownItem>();
+  // ad_ids distintos por grupo: somar linhas contaria o mesmo anúncio
+  // uma vez por dia do período.
+  const anuncios = new Map<string, Set<string>>();
+
   for (const r of rows) {
     const nome = chave(r);
     const atual = mapa.get(nome) ?? {
@@ -39,12 +44,15 @@ function agrupar(
     atual.results += r.results;
     atual.impressions += r.impressions;
     atual.cliquesLink += r.inline_link_clicks;
-    atual.ads += 1;
     mapa.set(nome, atual);
+
+    if (!anuncios.has(nome)) anuncios.set(nome, new Set());
+    anuncios.get(nome)!.add(r.ad_id);
   }
   return Array.from(mapa.values())
     .map((i) => ({
       ...i,
+      ads: anuncios.get(i.nome)?.size ?? 0,
       spend: Math.round(i.spend * 100) / 100,
       cost_per_result: i.results ? i.spend / i.results : 0,
       taxaAnuncio: i.impressions ? (i.cliquesLink / i.impressions) * 100 : 0,
@@ -60,6 +68,8 @@ function uniqueSorted(values: string[]): string[] {
 }
 
 type RawInsightRow = AdInsightRow & {
+  video_play_curve?: number[] | null;
+  video_thruplay?: number | null;
   video_plays?: number | null;
   video_avg_watch_time_sec?: number | null;
   video_duration_sec?: number | null;
@@ -104,37 +114,147 @@ function normalizeRow(row: RawInsightRow): AdInsightRow {
     result_indicator: row.result_indicator ?? null,
     video_storage_url: row.video_storage_url ?? raw.video_url ?? null,
     video_transcript: row.video_transcript ?? null,
-    preview_shareable_link: row.preview_shareable_link ?? null,
     video_retention: normalizeRetention(row),
+    video_desempenho: montarDesempenho({
+      plays: row.video_plays,
+      tempoMedioSec: row.video_avg_watch_time_sec,
+      thruplay: row.video_thruplay,
+      curva: row.video_play_curve,
+    }),
     ...taxonomia,
   };
+}
+
+/** Colunas de métrica — variam por dia, precisam vir de todas as linhas. */
+const COLUNAS_METRICA = [
+  "ad_id", "ad_name", "adset_id", "adset_name", "campaign_id", "campaign_name",
+  "date_start", "date_stop", "spend", "impressions", "reach", "clicks",
+  "inline_link_clicks", "ctr", "cpc", "cpm", "results", "cost_per_result",
+  "objective", "result_indicator", "video_plays", "video_avg_watch_time_sec",
+  "video_duration_sec", "video_p25", "video_p50", "video_p75", "video_p95",
+  "video_p100", "video_play_curve", "video_thruplay",
+].join(",");
+
+/** Criativo é por anúncio, não por anúncio-por-dia. */
+const COLUNAS_CRIATIVO =
+  "ad_id,headline,primary_text,description,call_to_action,image_url,video_id,link_url,video_storage_url,video_transcript";
+
+type LinhaCriativo = {
+  ad_id: string;
+  headline: string | null;
+  primary_text: string | null;
+  description: string | null;
+  call_to_action: string | null;
+  image_url: string | null;
+  video_id: string | null;
+  link_url: string | null;
+  video_storage_url: string | null;
+  video_transcript: string | null;
+};
+
+/**
+ * Busca criativos uma vez por anúncio.
+ *
+ * Lê-los junto com as métricas trazia o mesmo texto repetido em cada linha-dia:
+ * 1.052 criativos viravam 8.720 cópias, ~5 MB de payload redundante.
+ */
+async function fetchCriativos(): Promise<Map<string, LinhaCriativo>> {
+  const PAGE = 1000;
+  const mapa = new Map<string, LinhaCriativo>();
+
+  for (let inicio = 0; ; inicio += PAGE) {
+    const { data, error } = await supabase
+      .from("ad_creatives")
+      .select(COLUNAS_CRIATIVO)
+      .order("ad_id", { ascending: true })
+      .range(inicio, inicio + PAGE - 1);
+
+    if (error) throw new Error(`Erro ao buscar criativos: ${error.message}`);
+
+    const lote = (data ?? []) as unknown as LinhaCriativo[];
+    for (const c of lote) mapa.set(c.ad_id, c);
+    if (lote.length < PAGE) break;
+  }
+
+  return mapa;
+}
+
+/**
+ * Cache das linhas cruas por intervalo de datas.
+ *
+ * Buscar 30 dias custa ~9s: são 8.700 linhas em 9 idas ao Supabase. Mas o
+ * dado só muda uma vez por dia, quando o n8n roda às 6h — reconsultar a cada
+ * clique de filtro é desperdício puro. Filtro e agregação continuam em
+ * memória e são baratos.
+ *
+ * TTL curto o suficiente para uma reexecução manual do workflow aparecer sem
+ * ninguém precisar reiniciar o servidor.
+ */
+const TTL_CACHE_MS = 5 * 60 * 1000;
+const cacheLinhas = new Map<string, { em: number; linhas: AdInsightRow[] }>();
+
+function lerCache(chave: string): AdInsightRow[] | null {
+  const item = cacheLinhas.get(chave);
+  if (!item) return null;
+  if (Date.now() - item.em > TTL_CACHE_MS) {
+    cacheLinhas.delete(chave);
+    return null;
+  }
+  return item.linhas;
+}
+
+function gravarCache(chave: string, linhas: AdInsightRow[]) {
+  // Poda entradas vencidas para o mapa não crescer sem limite conforme o
+  // usuário navega por períodos diferentes.
+  const agora = Date.now();
+  for (const [k, v] of cacheLinhas) {
+    if (agora - v.em > TTL_CACHE_MS) cacheLinhas.delete(k);
+  }
+  cacheLinhas.set(chave, { em: agora, linhas });
 }
 
 async function fetchFromSupabase(
   dateFrom: string,
   dateTo: string
 ): Promise<AdInsightRow[]> {
+  const chave = `${dateFrom}..${dateTo}`;
+  const emCache = lerCache(chave);
+  if (emCache) return emCache;
+
   const PAGE = 1000;
   const todas: RawInsightRow[] = [];
 
   // A view pode devolver mais que o teto padrão do PostgREST (1000).
-  // Paginamos para não repetir aqui o mesmo bug de truncagem do n8n.
+  //
+  // A ordenação precisa ser determinística: a view ordena por
+  // (date_start, cost_per_result), e cost_per_result tem muitos nulos e
+  // empates. Sem desempate estável o Postgres pode devolver a mesma linha em
+  // duas páginas — e omitir outra. Ordenamos pela chave única (ad_id,
+  // date_start), que não empata.
   for (let inicio = 0; ; inicio += PAGE) {
     const { data, error } = await supabase
       .from("v_ads_performance")
-      .select("*")
+      .select(COLUNAS_METRICA)
       .gte("date_start", dateFrom)
       .lte("date_start", dateTo)
+      .order("date_start", { ascending: true })
+      .order("ad_id", { ascending: true })
       .range(inicio, inicio + PAGE - 1);
 
     if (error) throw new Error(`Erro ao buscar insights: ${error.message}`);
 
-    const lote = (data ?? []) as RawInsightRow[];
+    const lote = (data ?? []) as unknown as RawInsightRow[];
     todas.push(...lote);
     if (lote.length < PAGE) break;
   }
 
-  return todas.map(normalizeRow);
+  const criativos = await fetchCriativos();
+
+  const linhas = todas.map((linha) =>
+    normalizeRow({ ...linha, ...(criativos.get(linha.ad_id) ?? {}) })
+  );
+  gravarCache(chave, linhas);
+  return linhas;
 }
 
 function montarFunil(rows: AdInsightRow[]): Funil {
@@ -259,6 +379,12 @@ export async function getInsights(
       porCurso: agrupar(filtered, (r) => r.curso),
       porPraca: agrupar(filtered, (r) => r.praca),
     },
-    funil: montarFunil(filtered),
+    // Sem filtro de tipo, o funil cobre só conversão: somar lead com visita
+    // de perfil daria uma taxa de página que não corresponde a nada.
+    funil: montarFunil(
+      params.kind === "todos"
+        ? filtered.filter((r) => r.kind === "conversao")
+        : filtered
+    ),
   };
 }

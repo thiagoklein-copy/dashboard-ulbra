@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { AUTH_COOKIE } from "@/lib/auth";
+import { AUTH_COOKIE, tokenValido } from "@/lib/auth";
 
 const PUBLIC_PATHS = ["/login", "/api/auth/login"];
 
-export function middleware(request: NextRequest) {
+export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   if (
@@ -14,8 +14,9 @@ export function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  const auth = request.cookies.get(AUTH_COOKIE)?.value;
-  if (auth === "1") {
+  // O valor precisa ser um token assinado: quando era a constante "1",
+  // bastava enviar o cookie para entrar sem senha.
+  if (await tokenValido(request.cookies.get(AUTH_COOKIE)?.value)) {
     return NextResponse.next();
   }
 

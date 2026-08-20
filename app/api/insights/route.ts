@@ -60,7 +60,9 @@ export async function GET(request: NextRequest) {
       sortBy,
       sortDir: sortBy ? sortDir : null,
       page: Math.max(1, Number(sp.get("page") || 1)),
-      pageSize: Math.min(100, Math.max(10, Number(sp.get("pageSize") || 25))),
+      // Teto de 100 escondia os melhores criativos: com centenas de anúncios,
+      // ordenar por custo por resultado jogava os relevantes para a página 13.
+      pageSize: Math.min(1000, Math.max(10, Number(sp.get("pageSize") || 25))),
     };
 
     const data = await getInsights(params);
