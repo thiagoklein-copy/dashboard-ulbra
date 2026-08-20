@@ -12,13 +12,16 @@ export function facebookWatchUrl(videoId: string): string {
   return `https://www.facebook.com/watch/?v=${encodeURIComponent(videoId)}`;
 }
 
-/** Embed vertical (9:16) — anúncios Meta quase sempre são story/feed vertical. */
+/**
+ * Embed do plugin do Facebook.
+ * Feed ads costumam ser 4:5 — 9:16 deixava faixa branca em vídeos mais largos.
+ */
 export function facebookVideoEmbedUrl(
   videoId: string,
   size: { width?: number; height?: number } = {}
 ): string {
-  const width = size.width ?? 420;
-  const height = size.height ?? 746;
+  const width = size.width ?? 480;
+  const height = size.height ?? 600;
   const href = encodeURIComponent(facebookWatchUrl(videoId));
   return `https://www.facebook.com/plugins/video.php?href=${href}&show_text=false&width=${width}&height=${height}`;
 }
