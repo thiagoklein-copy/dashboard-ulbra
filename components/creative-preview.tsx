@@ -87,46 +87,39 @@ export function CreativeExpanded({
   return (
     <div className="space-y-5">
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)]">
-        {/* Mídia — object-contain + sem overflow pra não cortar o criativo */}
-        <div className="rounded-xl border bg-muted/40 p-3">
-          <div
-            className={cn(
-              "relative flex w-full items-center justify-center rounded-lg bg-black/5",
-              !videoSrc && !row.video_id && !row.image_url && "min-h-[220px]"
-            )}
-          >
-            {videoSrc ? (
-              <video
-                key={videoSrc}
-                className="h-auto max-h-[min(75vh,860px)] w-full max-w-full bg-black object-contain"
-                controls
-                playsInline
-                preload="metadata"
-                poster={proxyImagem(row.image_url) ?? undefined}
-                src={videoSrc}
-              />
-            ) : row.video_id ? (
-              <iframe
-                title={`Vídeo do anúncio ${row.name}`}
-                src={facebookVideoEmbedUrl(row.video_id)}
-                className="aspect-[9/16] w-full max-w-[420px] max-h-[min(75vh,860px)] border-0 bg-black"
-                allow="autoplay; clipboard-write; encrypted-media; picture-in-picture"
-                allowFullScreen
-              />
-            ) : row.image_url ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={proxyImagem(row.image_url) ?? row.image_url}
-                alt={row.name}
-                className="h-auto max-h-[min(75vh,860px)] w-auto max-w-full object-contain"
-              />
-            ) : (
-              <div className="flex min-h-[220px] w-full flex-col items-center justify-center gap-2 text-muted-foreground">
-                <ImageIcon className="size-8 opacity-50" />
-                <p className="text-xs">Sem mídia disponível</p>
-              </div>
-            )}
-          </div>
+        {/* Mídia — borda colada no criativo (sem padding / gap de img inline) */}
+        <div className="overflow-hidden rounded-xl border bg-black">
+          {videoSrc ? (
+            <video
+              key={videoSrc}
+              className="block h-auto max-h-[min(75vh,860px)] w-full bg-black object-contain"
+              controls
+              playsInline
+              preload="metadata"
+              poster={proxyImagem(row.image_url) ?? undefined}
+              src={videoSrc}
+            />
+          ) : row.video_id ? (
+            <iframe
+              title={`Vídeo do anúncio ${row.name}`}
+              src={facebookVideoEmbedUrl(row.video_id)}
+              className="block aspect-[9/16] w-full max-h-[min(75vh,860px)] border-0 bg-black"
+              allow="autoplay; clipboard-write; encrypted-media; picture-in-picture"
+              allowFullScreen
+            />
+          ) : row.image_url ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={proxyImagem(row.image_url) ?? row.image_url}
+              alt={row.name}
+              className="block h-auto max-h-[min(75vh,860px)] w-full object-contain"
+            />
+          ) : (
+            <div className="flex min-h-[220px] w-full flex-col items-center justify-center gap-2 bg-muted text-muted-foreground">
+              <ImageIcon className="size-8 opacity-50" />
+              <p className="text-xs">Sem mídia disponível</p>
+            </div>
+          )}
         </div>
 
         {/* Texto — direita (embaixo no mobile) */}
