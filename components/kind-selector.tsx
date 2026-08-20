@@ -27,7 +27,7 @@ export function KindSelector({
             "rounded-full px-4 py-1.5 text-xs font-medium transition-colors",
             value === o.value
               ? "bg-black text-white dark:bg-white dark:text-black"
-              : "bg-white text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/10"
+              : "bg-white text-black hover:bg-gray-100 dark:hover:bg-white/90"
           )}
         >
           {o.label}
