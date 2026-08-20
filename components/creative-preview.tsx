@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { ExternalLink, ImageIcon, Play } from "lucide-react";
 import { VideoDesempenhoPanel } from "@/components/video-desempenho-panel";
 import { VideoRetentionChart } from "@/components/video-retention-chart";
@@ -65,6 +66,91 @@ export function CreativeThumbnail({
   );
 }
 
+/** Player do Meta: poster encaixado (sem corte); embed só sob demanda em 4:5. */
+function FacebookVideoPreview({
+  videoId,
+  name,
+  posterUrl,
+}: {
+  videoId: string;
+  name: string;
+  posterUrl: string | null;
+}) {
+  const [playing, setPlaying] = useState(false);
+  const poster = proxyImagem(posterUrl);
+
+  if (playing) {
+    return (
+      <div className="bg-black">
+        <iframe
+          title={`Vídeo do anúncio ${name}`}
+          src={facebookVideoEmbedUrl(videoId)}
+          className="mx-auto block aspect-[4/5] w-full max-w-[480px] border-0 bg-black"
+          allow="autoplay; clipboard-write; encrypted-media; picture-in-picture"
+          allowFullScreen
+        />
+        <div className="flex items-center justify-between gap-2 border-t border-white/10 px-3 py-2">
+          <button
+            type="button"
+            onClick={() => setPlaying(false)}
+            className="text-xs text-white/70 hover:text-white"
+          >
+            Voltar ao criativo
+          </button>
+          <a
+            href={facebookWatchUrl(videoId)}
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex items-center gap-1 text-xs text-blue-400 hover:underline"
+          >
+            Abrir no Facebook
+            <ExternalLink className="size-3" />
+          </a>
+        </div>
+      </div>
+    );
+  }
+
+  if (poster) {
+    return (
+      <button
+        type="button"
+        onClick={() => setPlaying(true)}
+        className="group relative block w-full cursor-pointer text-left"
+      >
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={poster}
+          alt={name}
+          className="block h-auto max-h-[min(75vh,860px)] w-full object-contain"
+        />
+        <span className="absolute inset-0 flex items-center justify-center bg-black/25 transition-colors group-hover:bg-black/35">
+          <span className="flex size-14 items-center justify-center rounded-full bg-white/95 shadow-lg">
+            <Play className="size-6 fill-black text-black" />
+          </span>
+        </span>
+      </button>
+    );
+  }
+
+  return (
+    <div className="flex min-h-[220px] flex-col items-center justify-center gap-3 bg-muted px-4 py-8 text-center">
+      <p className="text-sm text-muted-foreground">
+        Preview do vídeo indisponível neste painel
+      </p>
+      <a
+        href={facebookWatchUrl(videoId)}
+        target="_blank"
+        rel="noreferrer"
+        className="inline-flex items-center gap-1.5 text-sm font-medium text-blue-600 hover:underline"
+      >
+        Assistir no Facebook
+        <ExternalLink className="size-3.5" />
+      </a>
+    </div>
+  );
+}
+
 interface CreativeExpandedProps {
   row: AggregatedRow;
   showAggregateHint?: boolean;
@@ -87,7 +173,7 @@ export function CreativeExpanded({
   return (
     <div className="space-y-5">
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)]">
-        {/* Mídia — borda colada no criativo (sem padding / gap de img inline) */}
+        {/* Mídia — borda colada no criativo */}
         <div className="overflow-hidden rounded-xl border bg-black">
           {videoSrc ? (
             <video
@@ -100,12 +186,10 @@ export function CreativeExpanded({
               src={videoSrc}
             />
           ) : row.video_id ? (
-            <iframe
-              title={`Vídeo do anúncio ${row.name}`}
-              src={facebookVideoEmbedUrl(row.video_id)}
-              className="block aspect-[9/16] w-full max-h-[min(75vh,860px)] border-0 bg-black"
-              allow="autoplay; clipboard-write; encrypted-media; picture-in-picture"
-              allowFullScreen
+            <FacebookVideoPreview
+              videoId={row.video_id}
+              name={row.name}
+              posterUrl={row.image_url}
             />
           ) : row.image_url ? (
             // eslint-disable-next-line @next/next/no-img-element
