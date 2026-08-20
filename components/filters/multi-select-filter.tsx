@@ -30,9 +30,10 @@ export function MultiSelectFilter({
   const [query, setQuery] = useState("");
 
   const filtered = useMemo(() => {
+    const safe = options.filter((o): o is string => Boolean(o));
     const q = query.trim().toLowerCase();
-    if (!q) return options;
-    return options.filter((o) => o.toLowerCase().includes(q));
+    if (!q) return safe;
+    return safe.filter((o) => o.toLowerCase().includes(q));
   }, [options, query]);
 
   const summary =

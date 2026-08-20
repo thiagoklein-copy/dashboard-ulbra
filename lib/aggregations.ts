@@ -47,11 +47,11 @@ function groupKey(row: AdInsightRow, level: AggregationLevel): string {
 function displayName(row: AdInsightRow, level: AggregationLevel): string {
   switch (level) {
     case "campaign":
-      return row.campaign_name;
+      return row.campaign_name ?? "Sem campanha";
     case "adset":
-      return row.adset_name;
+      return row.adset_name ?? "Sem conjunto";
     case "ad":
-      return row.ad_name;
+      return row.ad_name ?? "Sem anúncio";
   }
 }
 
@@ -250,7 +250,7 @@ export function filterRows(
     search: string;
   }
 ): AdInsightRow[] {
-  const search = opts.search.trim().toLowerCase();
+  const search = (opts.search ?? "").trim().toLowerCase();
 
   return rows.filter((row) => {
     if (row.date_start < opts.dateFrom || row.date_start > opts.dateTo) {
@@ -265,15 +265,21 @@ export function filterRows(
     if (opts.pracas.length && !opts.pracas.includes(row.praca)) {
       return false;
     }
-    if (opts.campaigns.length && !opts.campaigns.includes(row.campaign_name)) {
+    if (
+      opts.campaigns.length &&
+      !opts.campaigns.includes(row.campaign_name ?? "")
+    ) {
       return false;
     }
-    if (opts.adsets.length && !opts.adsets.includes(row.adset_name)) {
+    if (
+      opts.adsets.length &&
+      !opts.adsets.includes(row.adset_name ?? "")
+    ) {
       return false;
     }
     if (search) {
       const haystack = [
-        row.ad_name,
+        row.ad_name ?? "",
         row.headline ?? "",
         row.primary_text ?? "",
       ]

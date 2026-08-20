@@ -100,10 +100,16 @@ function normalizeRetention(row: RawInsightRow): VideoRetention | null {
 
 function normalizeRow(row: RawInsightRow): AdInsightRow {
   const raw = row as RawInsightRow & { video_url?: string | null };
-  const taxonomia = classificarCampanha(row.campaign_name, row.objective);
+  const campaign_name = row.campaign_name ?? "Sem campanha";
+  const adset_name = row.adset_name ?? "Sem conjunto";
+  const ad_name = row.ad_name ?? "Sem anúncio";
+  const taxonomia = classificarCampanha(campaign_name, row.objective);
 
   return {
     ...row,
+    campaign_name,
+    adset_name,
+    ad_name,
     spend: Number(row.spend ?? 0),
     impressions: Number(row.impressions ?? 0),
     clicks: Number(row.clicks ?? 0),

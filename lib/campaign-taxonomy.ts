@@ -79,8 +79,8 @@ const RECORTES: [slug: string, label: string][] = [
   ["transferencia", "Transferência"],
 ];
 
-function normalizar(texto: string): string {
-  return texto
+function normalizar(texto: string | null | undefined): string {
+  return (texto ?? "")
     .toLowerCase()
     .normalize("NFD")
     .replace(/[̀-ͯ]/g, "")
@@ -103,10 +103,11 @@ function extrairMiolo(nome: string): string {
 }
 
 export function classificarCampanha(
-  campaignName: string,
+  campaignName: string | null | undefined,
   objective?: string | null
 ): CampaignTaxonomy {
-  const bruto = normalizar(campaignName);
+  const nome = campaignName ?? "";
+  const bruto = normalizar(nome);
 
   // Branding sai do objetivo da campanha, não do nome — o nome é só reforço.
   const kind: CampaignKind =
@@ -120,8 +121,8 @@ export function classificarCampanha(
       : "conversao";
 
   // Formato institucional: "2026/2 | Brasil | Rebranding | 17Abril"
-  if (campaignName.includes("|")) {
-    const partes = campaignName.split("|").map((p) => normalizar(p));
+  if (nome.includes("|")) {
+    const partes = nome.split("|").map((p) => normalizar(p));
     const praca =
       PRACAS.find(([slug]) => partes.some((p) => p === slug))?.[1] ??
       PRACAS.find(([slug]) => partes.some((p) => p.includes(slug)))?.[1] ??
@@ -129,7 +130,7 @@ export function classificarCampanha(
     return { curso: "Institucional", praca, kind, recorte: null };
   }
 
-  let miolo = extrairMiolo(campaignName);
+  let miolo = extrairMiolo(nome);
 
   // Praça fica no fim do miolo; casamos a mais longa primeiro.
   let praca = DESCONHECIDO;
