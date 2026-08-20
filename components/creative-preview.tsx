@@ -89,11 +89,16 @@ export function CreativeExpanded({
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)]">
         {/* Mídia — object-contain + sem overflow pra não cortar o criativo */}
         <div className="rounded-xl border bg-muted/40 p-3">
-          <div className="relative flex min-h-[220px] w-full items-center justify-center rounded-lg bg-black/5">
+          <div
+            className={cn(
+              "relative flex w-full items-center justify-center rounded-lg bg-black/5",
+              !videoSrc && !row.video_id && !row.image_url && "min-h-[220px]"
+            )}
+          >
             {videoSrc ? (
               <video
                 key={videoSrc}
-                className="h-auto max-h-[min(75vh,860px)] w-auto max-w-full bg-black object-contain"
+                className="h-auto max-h-[min(75vh,860px)] w-full max-w-full bg-black object-contain"
                 controls
                 playsInline
                 preload="metadata"
@@ -104,7 +109,7 @@ export function CreativeExpanded({
               <iframe
                 title={`Vídeo do anúncio ${row.name}`}
                 src={facebookVideoEmbedUrl(row.video_id)}
-                className="aspect-[4/5] w-full max-h-[min(75vh,860px)] border-0 bg-black"
+                className="aspect-[9/16] w-full max-w-[420px] max-h-[min(75vh,860px)] border-0 bg-black"
                 allow="autoplay; clipboard-write; encrypted-media; picture-in-picture"
                 allowFullScreen
               />

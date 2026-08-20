@@ -12,9 +12,15 @@ export function facebookWatchUrl(videoId: string): string {
   return `https://www.facebook.com/watch/?v=${encodeURIComponent(videoId)}`;
 }
 
-export function facebookVideoEmbedUrl(videoId: string): string {
+/** Embed vertical (9:16) — anúncios Meta quase sempre são story/feed vertical. */
+export function facebookVideoEmbedUrl(
+  videoId: string,
+  size: { width?: number; height?: number } = {}
+): string {
+  const width = size.width ?? 420;
+  const height = size.height ?? 746;
   const href = encodeURIComponent(facebookWatchUrl(videoId));
-  return `https://www.facebook.com/plugins/video.php?href=${href}&show_text=false&width=500`;
+  return `https://www.facebook.com/plugins/video.php?href=${href}&show_text=false&width=${width}&height=${height}`;
 }
 
 export function resolveAdPreviewUrl(
