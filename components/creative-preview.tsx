@@ -86,14 +86,14 @@ export function CreativeExpanded({
 
   return (
     <div className="space-y-5">
-      <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
-        {/* Mídia — storage local, senão embed do Facebook pelo video_id */}
-        <div className="rounded-xl border bg-muted/40 p-2">
-          <div className="relative flex min-h-[220px] max-h-[min(70vh,760px)] w-full items-center justify-center overflow-hidden rounded-lg bg-black/5">
+      <div className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)]">
+        {/* Mídia — object-contain + sem overflow pra não cortar o criativo */}
+        <div className="rounded-xl border bg-muted/40 p-3">
+          <div className="relative flex min-h-[220px] w-full items-center justify-center rounded-lg bg-black/5">
             {videoSrc ? (
               <video
                 key={videoSrc}
-                className="max-h-[min(70vh,760px)] w-full bg-black object-contain"
+                className="h-auto max-h-[min(75vh,860px)] w-auto max-w-full bg-black object-contain"
                 controls
                 playsInline
                 preload="metadata"
@@ -104,7 +104,7 @@ export function CreativeExpanded({
               <iframe
                 title={`Vídeo do anúncio ${row.name}`}
                 src={facebookVideoEmbedUrl(row.video_id)}
-                className="aspect-[4/5] w-full max-h-[min(70vh,760px)] border-0 bg-black"
+                className="aspect-[4/5] w-full max-h-[min(75vh,860px)] border-0 bg-black"
                 allow="autoplay; clipboard-write; encrypted-media; picture-in-picture"
                 allowFullScreen
               />
@@ -113,7 +113,7 @@ export function CreativeExpanded({
               <img
                 src={proxyImagem(row.image_url) ?? row.image_url}
                 alt={row.name}
-                className="max-h-[min(70vh,760px)] w-full object-contain"
+                className="h-auto max-h-[min(75vh,860px)] w-auto max-w-full object-contain"
               />
             ) : (
               <div className="flex min-h-[220px] w-full flex-col items-center justify-center gap-2 text-muted-foreground">
