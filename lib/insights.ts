@@ -120,6 +120,7 @@ function normalizeRow(row: RawInsightRow): AdInsightRow {
     result_indicator: row.result_indicator ?? null,
     video_storage_url: row.video_storage_url ?? raw.video_url ?? null,
     video_transcript: row.video_transcript ?? null,
+    preview_shareable_link: row.preview_shareable_link ?? null,
     video_retention: normalizeRetention(row),
     video_desempenho: montarDesempenho({
       plays: row.video_plays,
@@ -143,7 +144,7 @@ const COLUNAS_METRICA = [
 
 /** Criativo é por anúncio, não por anúncio-por-dia. */
 const COLUNAS_CRIATIVO =
-  "ad_id,headline,primary_text,description,call_to_action,image_url,video_id,link_url,video_storage_url,video_transcript";
+  "ad_id,headline,primary_text,description,call_to_action,image_url,video_id,link_url,video_storage_url,video_transcript,preview_shareable_link";
 
 type LinhaCriativo = {
   ad_id: string;
@@ -156,6 +157,7 @@ type LinhaCriativo = {
   link_url: string | null;
   video_storage_url: string | null;
   video_transcript: string | null;
+  preview_shareable_link: string | null;
 };
 
 /**
@@ -167,18 +169,35 @@ type LinhaCriativo = {
 async function fetchCriativos(): Promise<Map<string, LinhaCriativo>> {
   const PAGE = 1000;
   const mapa = new Map<string, LinhaCriativo>();
+  let colunas = COLUNAS_CRIATIVO;
 
   for (let inicio = 0; ; inicio += PAGE) {
     const { data, error } = await supabase
       .from("ad_creatives")
-      .select(COLUNAS_CRIATIVO)
+      .select(colunas)
       .order("ad_id", { ascending: true })
       .range(inicio, inicio + PAGE - 1);
+
+    if (
+      error &&
+      colunas.includes("preview_shareable_link") &&
+      /preview_shareable_link/i.test(error.message)
+    ) {
+      // Coluna ainda não migrada no Supabase — segue sem o preview oficial.
+      colunas = COLUNAS_CRIATIVO.replace(",preview_shareable_link", "");
+      inicio -= PAGE;
+      continue;
+    }
 
     if (error) throw new Error(`Erro ao buscar criativos: ${error.message}`);
 
     const lote = (data ?? []) as unknown as LinhaCriativo[];
-    for (const c of lote) mapa.set(c.ad_id, c);
+    for (const c of lote) {
+      mapa.set(c.ad_id, {
+        ...c,
+        preview_shareable_link: c.preview_shareable_link ?? null,
+      });
+    }
     if (lote.length < PAGE) break;
   }
 

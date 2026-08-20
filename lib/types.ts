@@ -90,6 +90,8 @@ export interface AdInsightRow {
   /** Transcrição do áudio/vídeo (quando processada) */
   video_transcript: string | null;
   link_url: string | null;
+  /** Preview oficial do anúncio no Meta (não é a landing) */
+  preview_shareable_link: string | null;
   video_retention: VideoRetention | null;
   video_desempenho: VideoDesempenho | null;
   /** Objetivo da campanha no Meta (OUTCOME_LEADS, LINK_CLICKS…) */
@@ -109,6 +111,8 @@ export interface AggregatedRow {
   campaign_name: string;
   adset_name: string | null;
   ad_name: string | null;
+  /** ID do anúncio Meta usado no link “Ver anúncio” */
+  ad_id: string;
   spend: number;
   impressions: number;
   clicks: number;
@@ -126,6 +130,7 @@ export interface AggregatedRow {
   video_storage_url: string | null;
   video_transcript: string | null;
   link_url: string | null;
+  preview_shareable_link: string | null;
   video_retention: VideoRetention | null;
   video_desempenho: VideoDesempenho | null;
   ad_count: number;

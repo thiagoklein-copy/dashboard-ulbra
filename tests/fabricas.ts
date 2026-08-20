@@ -33,6 +33,7 @@ export function linha(over: Partial<AdInsightRow> = {}): AdInsightRow {
     video_storage_url: null,
     video_transcript: null,
     link_url: null,
+    preview_shareable_link: null,
     video_retention: null,
     video_desempenho: null,
     objective: "OUTCOME_LEADS",

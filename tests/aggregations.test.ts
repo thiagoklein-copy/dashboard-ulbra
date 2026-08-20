@@ -11,10 +11,12 @@ import { linha, semFiltro } from "./fabricas";
 function agregado(over: Partial<AggregatedRow> = {}): AggregatedRow {
   return {
     id: "1", name: "a", campaign_name: "c", adset_name: null, ad_name: null,
+    ad_id: "ad-1",
     spend: 0, impressions: 0, clicks: 0, ctr: 0, cpc: 0, cpm: 0,
     results: 0, cost_per_result: 0, headline: null, primary_text: null,
     description: null, call_to_action: null, image_url: null, video_id: null,
     video_storage_url: null, video_transcript: null, link_url: null,
+    preview_shareable_link: null,
     video_retention: null, video_desempenho: null,
     ad_count: 1, objective: null, result_indicator: null,
     curso: "Medicina", praca: "Canoas", kind: "conversao", recorte: null,

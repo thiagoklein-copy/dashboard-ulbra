@@ -77,7 +77,10 @@ export function CreativeExpanded({
   const videoSrc = row.video_storage_url?.trim() || null;
   const hasTranscript = Boolean(row.video_transcript?.trim());
   const showTranscriptPending = Boolean(row.video_id) && !hasTranscript;
-  const adPreviewUrl = resolveAdPreviewUrl(null, row.id);
+  const adPreviewUrl = resolveAdPreviewUrl(
+    row.preview_shareable_link,
+    row.ad_id
+  );
   const videoWatchUrl = row.video_id ? facebookWatchUrl(row.video_id) : null;
   const landingUrl = row.link_url?.trim() || null;
 
@@ -176,7 +179,9 @@ export function CreativeExpanded({
                   rel="noreferrer"
                   className="inline-flex items-center gap-1.5 text-sm font-medium text-blue-600 hover:underline"
                 >
-                  Abrir no Gerenciador de Anúncios
+                  {row.preview_shareable_link
+                    ? "Abrir preview do anúncio no Meta"
+                    : "Abrir no Gerenciador de Anúncios"}
                   <ExternalLink className="size-3.5" />
                 </a>
               </div>
