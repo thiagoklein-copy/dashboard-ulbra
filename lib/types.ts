@@ -193,6 +193,20 @@ export interface InsightsResponse {
     porPraca: BreakdownItem[];
   };
   funil: Funil;
+  /** Matrículas do período (quando integrado ao Supabase). */
+  matriculas?: MatriculasResumo;
+  investimento?: {
+    meta: number;
+    externo: {
+      conversao: number;
+      branding: number;
+    };
+  };
+  matriz?: {
+    pracaCurso: MatrizItem[];
+    porPraca: MatrizItem[];
+    porCurso: MatrizItem[];
+  };
 }
 
 /** Funil: impressões → cliques no link → resultado. */
@@ -207,6 +221,10 @@ export interface Funil {
   taxaPagina: number;
   investimento: number;
   indicador: string | null;
+  resultadoAposClique?: boolean;
+  taxaSobreImpressoes?: number;
+  matriculas?: number | null;
+  taxaMatricula?: number;
 }
 
 export interface BreakdownItem {
@@ -221,4 +239,39 @@ export interface BreakdownItem {
   taxaAnuncio: number;
   /** % de cliques que viraram resultado — qualidade da página/oferta */
   taxaPagina: number;
+  matriculas?: number;
+  cac?: number;
+  receita?: number;
+}
+
+/**
+ * Bloco de matrículas do período.
+ */
+export interface MatriculasResumo {
+  total: number;
+  receita: number;
+  semReceita: number;
+  investimento: number;
+  cac: number;
+  roi: number;
+  taxaMatricula: number;
+  dadoAte: string | null;
+  periodoIncompleto: boolean;
+  filtroNaoAplicado: boolean;
+}
+
+/** Uma linha da matriz praça × curso. */
+export interface MatrizItem {
+  id: string;
+  praca: string;
+  curso: string;
+  investimento: number;
+  fracaoRateada: number;
+  leads: number;
+  cpl: number;
+  matriculas: number;
+  cac: number;
+  receita: number;
+  roi: number;
+  taxaConversao: number;
 }
