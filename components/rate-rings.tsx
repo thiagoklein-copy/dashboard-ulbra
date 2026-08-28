@@ -65,19 +65,38 @@ function BarraEtapas({ funil, loading }: { funil: Funil | null; loading?: boolea
   const imp = f?.impressoes ?? 0;
   const cliques = f?.cliquesLink ?? 0;
   const leads = f?.resultados ?? 0;
+  const aposClique = f?.resultadoAposClique ?? true;
+
+  /*
+    A barra só pode encaixar etapas quando uma contém a outra. Em conversão
+    isso vale: quem converteu clicou, quem clicou viu. Em branding não —
+    engajamento acontece dentro do Meta e chega a ser 5x os cliques, o que
+    fazia `cliques - leads` virar negativo e a fatia do meio sumir zerada
+    pelo clamp, sem ninguém perceber.
+
+    Então em branding a barra mostra só o que de fato aninha (viu → clicou),
+    e o resultado aparece na legenda como grandeza paralela.
+  */
+  const bruto = aposClique
+    ? [imp - cliques, cliques - leads, leads].map((v) => Math.max(0, v))
+    : [Math.max(0, imp - cliques), cliques];
 
   // Cliques e leads somam frações minúsculas do total; usamos raiz para
   // que as fatias finais fiquem visíveis sem inventar proporção.
-  const bruto = [imp - cliques, cliques - leads, leads].map((v) => Math.max(0, v));
   const peso = bruto.map((v) => Math.sqrt(v));
   const soma = peso.reduce((a, b) => a + b, 0) || 1;
   const fatias = peso.map((p) => (p / soma) * 100);
 
-  const ITENS = [
-    { rotulo: "Não clicou", valor: bruto[0], cor: "#d6d3cd" },
-    { rotulo: "Clicou, não converteu", valor: bruto[1], cor: "#f59e0b" },
-    { rotulo: "Converteu", valor: bruto[2], cor: "#059669" },
-  ];
+  const ITENS = aposClique
+    ? [
+        { rotulo: "Não clicou", valor: bruto[0], cor: "#d6d3cd" },
+        { rotulo: "Clicou, não converteu", valor: bruto[1], cor: "#f59e0b" },
+        { rotulo: "Converteu", valor: bruto[2], cor: "#059669" },
+      ]
+    : [
+        { rotulo: "Não clicou", valor: bruto[0], cor: "#d6d3cd" },
+        { rotulo: "Clicou no link", valor: bruto[1], cor: "#f59e0b" },
+      ];
 
   return (
     <div>
@@ -97,6 +116,17 @@ function BarraEtapas({ funil, loading }: { funil: Funil | null; loading?: boolea
             </span>
           </div>
         ))}
+        {!aposClique && (
+          <div className="flex items-center gap-1.5">
+            <span className="size-2 rounded-full ring-1 ring-emerald-600" />
+            <span className="text-[11px] text-gray-500 dark:text-gray-400">
+              Resultado (fora da barra — não vem do clique)
+            </span>
+            <span className="text-[11px] font-medium tabular-nums text-gray-900 dark:text-gray-100">
+              {loading ? "—" : formatMetric(leads, "number")}
+            </span>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -110,10 +140,17 @@ export function RateRings({
   loading?: boolean;
 }) {
   const f = funil;
+  const aposClique = f?.resultadoAposClique ?? true;
 
   return (
     <div className={cn("rounded-2xl bg-white p-5 shadow-sm dark:bg-[#171a20]")}>
-      <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100">Taxas de conversão</h3>
+      <div className="flex items-center gap-1.5">
+        <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100">Taxas de conversão</h3>
+        {/* Derivadas de impressão e clique, que só a Meta entrega. */}
+        <span className="rounded-full bg-gray-100 px-1.5 py-px text-[9px] font-medium uppercase tracking-wide text-gray-500 dark:bg-white/10 dark:text-gray-400">
+          Meta
+        </span>
+      </div>
       <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
         Quanto sobra a cada etapa do funil
       </p>
@@ -128,11 +165,20 @@ export function RateRings({
           icone={MousePointerClick}
           loading={loading}
         />
+        {/*
+          Em branding o resultado não passa pelo site, então "cliques que
+          viraram resultado" não descreve nada — e o anel vivia cravado no
+          máximo, porque a razão passava de 100%.
+        */}
         <Anel
-          valor={f?.taxaPagina ?? 0}
-          maximo={50}
-          titulo="Da página"
-          legenda="cliques que viraram resultado"
+          valor={aposClique ? (f?.taxaPagina ?? 0) : (f?.taxaSobreImpressoes ?? 0)}
+          maximo={aposClique ? 50 : 20}
+          titulo={aposClique ? "Da página" : "Da ação"}
+          legenda={
+            aposClique
+              ? "cliques que viraram resultado"
+              : "impressões que viraram resultado"
+          }
           cor="#059669"
           icone={Target}
           loading={loading}

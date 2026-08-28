@@ -6,6 +6,9 @@
     "skipLibCheck": true,
     "strict": true,
     "noEmit": true,
+    // O importador roda fora do Next (`node scripts/importar-matriculas.mts`) e
+    // precisa da extensao explicita para o Node resolver o modulo.
+    "allowImportingTsExtensions": true,
     "esModuleInterop": true,
     "module": "esnext",
     "moduleResolution": "bundler",
@@ -30,5 +33,5 @@
     ".next/dev/types/**/*.ts",
     "**/*.mts"
   ],
-  "exclude": ["node_modules", "scripts", "tests", "vitest.config.mts"]
+  "exclude": ["node_modules"]
 }

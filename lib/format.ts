@@ -40,6 +40,40 @@ export function formatMetric(
   }
 }
 
+/**
+ * Data ISO que existe de verdade.
+ *
+ * Sem esta checagem o valor da querystring ia cru para o Postgres, que
+ * respondia `invalid input syntax for type date: "abc"` — mensagem interna
+ * do banco devolvida ao cliente com status 500, quando é erro de quem
+ * chamou. A volta pelo ISO pega data impossível como 2026-02-31, que o
+ * construtor de Date aceita calado e rola para março.
+ */
+const FORMATO_ISO = /^\d{4}-\d{2}-\d{2}$/;
+
+export function isoValido(valor: string): boolean {
+  if (!FORMATO_ISO.test(valor)) return false;
+  const d = new Date(`${valor}T00:00:00Z`);
+  return !Number.isNaN(d.getTime()) && d.toISOString().slice(0, 10) === valor;
+}
+
+/**
+ * Janela padrão das rotas quando `from`/`to` não vêm na URL: os últimos 7
+ * dias, igual ao que o dashboard já pede por conta própria.
+ *
+ * Era um par de datas fixas de agosto de 2026. Funcionava enquanto agosto
+ * de 2026 era "agora"; depois disso, quem chamasse a API sem parâmetros
+ * receberia um período histórico com cara de período atual — e o relatório
+ * imprimível saía com o recorte errado sem dizer nada.
+ */
+export function janelaPadrao(): { de: string; ate: string } {
+  const hoje = new Date();
+  const iso = (d: Date) => d.toISOString().slice(0, 10);
+  const antes = new Date(hoje);
+  antes.setUTCDate(antes.getUTCDate() - 6);
+  return { de: iso(antes), ate: iso(hoje) };
+}
+
 export function formatDateBR(iso: string): string {
   const [y, m, d] = iso.split("-").map(Number);
   return new Intl.DateTimeFormat("pt-BR").format(new Date(y, m - 1, d));

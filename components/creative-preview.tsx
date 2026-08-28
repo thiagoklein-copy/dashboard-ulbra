@@ -1,15 +1,9 @@
 "use client";
 
-import { useState } from "react";
-import { ExternalLink, ImageIcon, Play } from "lucide-react";
+import { ImageIcon, Play } from "lucide-react";
 import { VideoDesempenhoPanel } from "@/components/video-desempenho-panel";
 import { VideoRetentionChart } from "@/components/video-retention-chart";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import {
-  facebookVideoEmbedUrl,
-  facebookWatchUrl,
-  resolveAdPreviewUrl,
-} from "@/lib/ad-links";
 import type { AggregatedRow } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -66,91 +60,6 @@ export function CreativeThumbnail({
   );
 }
 
-/** Player do Meta: poster encaixado (sem corte); embed só sob demanda em 4:5. */
-function FacebookVideoPreview({
-  videoId,
-  name,
-  posterUrl,
-}: {
-  videoId: string;
-  name: string;
-  posterUrl: string | null;
-}) {
-  const [playing, setPlaying] = useState(false);
-  const poster = proxyImagem(posterUrl);
-
-  if (playing) {
-    return (
-      <div className="bg-black">
-        <iframe
-          title={`Vídeo do anúncio ${name}`}
-          src={facebookVideoEmbedUrl(videoId)}
-          className="mx-auto block aspect-[4/5] w-full max-w-[480px] border-0 bg-black"
-          allow="autoplay; clipboard-write; encrypted-media; picture-in-picture"
-          allowFullScreen
-        />
-        <div className="flex items-center justify-between gap-2 border-t border-white/10 px-3 py-2">
-          <button
-            type="button"
-            onClick={() => setPlaying(false)}
-            className="text-xs text-white/70 hover:text-white"
-          >
-            Voltar ao criativo
-          </button>
-          <a
-            href={facebookWatchUrl(videoId)}
-            target="_blank"
-            rel="noreferrer"
-            className="inline-flex items-center gap-1 text-xs text-blue-400 hover:underline"
-          >
-            Abrir no Facebook
-            <ExternalLink className="size-3" />
-          </a>
-        </div>
-      </div>
-    );
-  }
-
-  if (poster) {
-    return (
-      <button
-        type="button"
-        onClick={() => setPlaying(true)}
-        className="group relative block w-full cursor-pointer text-left"
-      >
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src={poster}
-          alt={name}
-          className="block h-auto max-h-[min(75vh,860px)] w-full object-contain"
-        />
-        <span className="absolute inset-0 flex items-center justify-center bg-black/25 transition-colors group-hover:bg-black/35">
-          <span className="flex size-14 items-center justify-center rounded-full bg-white/95 shadow-lg">
-            <Play className="size-6 fill-black text-black" />
-          </span>
-        </span>
-      </button>
-    );
-  }
-
-  return (
-    <div className="flex min-h-[220px] flex-col items-center justify-center gap-3 bg-muted px-4 py-8 text-center">
-      <p className="text-sm text-muted-foreground">
-        Preview do vídeo indisponível neste painel
-      </p>
-      <a
-        href={facebookWatchUrl(videoId)}
-        target="_blank"
-        rel="noreferrer"
-        className="inline-flex items-center gap-1.5 text-sm font-medium text-blue-600 hover:underline"
-      >
-        Assistir no Facebook
-        <ExternalLink className="size-3.5" />
-      </a>
-    </div>
-  );
-}
-
 interface CreativeExpandedProps {
   row: AggregatedRow;
   showAggregateHint?: boolean;
@@ -163,47 +72,45 @@ export function CreativeExpanded({
   const videoSrc = row.video_storage_url?.trim() || null;
   const hasTranscript = Boolean(row.video_transcript?.trim());
   const showTranscriptPending = Boolean(row.video_id) && !hasTranscript;
-  const adPreviewUrl = resolveAdPreviewUrl(
-    row.preview_shareable_link,
-    row.ad_id
-  );
-  const videoWatchUrl = row.video_id ? facebookWatchUrl(row.video_id) : null;
-  const landingUrl = row.link_url?.trim() || null;
 
   return (
     <div className="space-y-5">
-      <div className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)]">
-        {/* Mídia — borda colada no criativo */}
-        <div className="overflow-hidden rounded-xl border bg-black">
-          {videoSrc ? (
-            <video
-              key={videoSrc}
-              className="block h-auto max-h-[min(75vh,860px)] w-full bg-black object-contain"
-              controls
-              playsInline
-              preload="metadata"
-              poster={proxyImagem(row.image_url) ?? undefined}
-              src={videoSrc}
-            />
-          ) : row.video_id ? (
-            <FacebookVideoPreview
-              videoId={row.video_id}
-              name={row.name}
-              posterUrl={row.image_url}
-            />
-          ) : row.image_url ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={proxyImagem(row.image_url) ?? row.image_url}
-              alt={row.name}
-              className="block h-auto max-h-[min(75vh,860px)] w-full object-contain"
-            />
-          ) : (
-            <div className="flex min-h-[220px] w-full flex-col items-center justify-center gap-2 bg-muted text-muted-foreground">
-              <ImageIcon className="size-8 opacity-50" />
-              <p className="text-xs">Sem mídia disponível</p>
-            </div>
-          )}
+      <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+        {/* Mídia — esquerda (topo no mobile) */}
+        <div className="overflow-hidden rounded-xl border bg-muted">
+          <div className="relative aspect-[4/5] w-full bg-black/5">
+            {videoSrc ? (
+              <video
+                key={videoSrc}
+                className="size-full bg-black object-contain"
+                controls
+                playsInline
+                preload="metadata"
+                poster={proxyImagem(row.image_url) ?? undefined}
+                src={videoSrc}
+              />
+            ) : row.image_url ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={proxyImagem(row.image_url) ?? row.image_url}
+                alt={row.name}
+                className="size-full object-cover"
+              />
+            ) : (
+              <div className="flex size-full flex-col items-center justify-center gap-2 text-muted-foreground">
+                <ImageIcon className="size-8 opacity-50" />
+                <p className="text-xs">Sem mídia disponível</p>
+              </div>
+            )}
+
+            {!videoSrc && row.video_id && row.image_url && (
+              <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-black/25">
+                <div className="flex size-12 items-center justify-center rounded-full bg-white/90 shadow">
+                  <Play className="size-5 fill-black text-black" />
+                </div>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Texto — direita (embaixo no mobile) */}
@@ -250,55 +157,18 @@ export function CreativeExpanded({
               </p>
             </div>
 
-            {adPreviewUrl && (
+            {row.link_url && (
               <div>
                 <p className="mb-1 text-xs font-medium tracking-wide text-muted-foreground uppercase">
-                  Ver anúncio
+                  Link
                 </p>
                 <a
-                  href={adPreviewUrl}
+                  href={row.link_url}
                   target="_blank"
                   rel="noreferrer"
-                  className="inline-flex items-center gap-1.5 text-sm font-medium text-blue-600 hover:underline"
+                  className="break-all text-sm text-blue-600 hover:underline"
                 >
-                  {row.preview_shareable_link
-                    ? "Abrir preview do anúncio no Meta"
-                    : "Abrir no Gerenciador de Anúncios"}
-                  <ExternalLink className="size-3.5" />
-                </a>
-              </div>
-            )}
-
-            {videoWatchUrl && (
-              <div>
-                <p className="mb-1 text-xs font-medium tracking-wide text-muted-foreground uppercase">
-                  Vídeo
-                </p>
-                <a
-                  href={videoWatchUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="inline-flex items-center gap-1.5 text-sm font-medium text-blue-600 hover:underline"
-                >
-                  Abrir vídeo no Facebook
-                  <ExternalLink className="size-3.5" />
-                </a>
-              </div>
-            )}
-
-            {landingUrl && (
-              <div>
-                <p className="mb-1 text-xs font-medium tracking-wide text-muted-foreground uppercase">
-                  Página de destino
-                </p>
-                <a
-                  href={landingUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="inline-flex items-center gap-1.5 break-all text-sm text-blue-600 hover:underline"
-                >
-                  {landingUrl}
-                  <ExternalLink className="size-3.5 shrink-0" />
+                  {row.link_url}
                 </a>
               </div>
             )}

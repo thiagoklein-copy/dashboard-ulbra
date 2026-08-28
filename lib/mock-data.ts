@@ -607,7 +607,6 @@ type MockRow = Omit<
   | "recorte"
   | "reach"
   | "inline_link_clicks"
-  | "preview_shareable_link"
 >;
 
 export const MOCK_INSIGHTS: MockRow[] = RAW_MOCK_INSIGHTS.map((row) => {
@@ -620,6 +619,5 @@ export const MOCK_INSIGHTS: MockRow[] = RAW_MOCK_INSIGHTS.map((row) => {
     video_transcript: media?.video_transcript ?? null,
     video_retention: media?.video_retention ?? null,
     video_desempenho: null,
-    preview_shareable_link: null,
   };
 });

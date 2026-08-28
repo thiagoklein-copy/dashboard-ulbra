@@ -40,3 +40,15 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# planilhas de matrícula
+#
+# A base do sistema acadêmico traz nome do aluno e número de contrato. Só o
+# agregado sem PII vai para o banco, via `npm run importar-matriculas` — o
+# arquivo em si nunca entra no repositório.
+*.xlsx
+*.xls
+*.csv
+
+# carga de matrículas gerada por `--sql` (regenerável, muda todo dia)
+carga-matriculas*.sql

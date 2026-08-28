@@ -29,7 +29,7 @@ export function CreativeModal({
 }: CreativeModalProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[92vh] overflow-y-auto p-0 sm:max-w-5xl">
+      <DialogContent className="max-h-[90vh] overflow-y-auto p-0 sm:max-w-4xl">
         {row && (
           <>
             <DialogHeader className="border-b px-5 py-4 pr-12 text-left">

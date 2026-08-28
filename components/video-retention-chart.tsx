@@ -9,6 +9,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
+import { Badge } from "@/components/ui/badge";
 import {
   diagnoseRetention,
   formatWatchTime,
@@ -22,12 +23,35 @@ interface VideoRetentionChartProps {
   className?: string;
 }
 
+const AREA_STYLES: Record<
+  string,
+  { badge: string; box: string }
+> = {
+  hook: {
+    badge: "bg-amber-100 text-amber-900 hover:bg-amber-100",
+    box: "border-amber-200 bg-amber-50",
+  },
+  conteudo: {
+    badge: "bg-orange-100 text-orange-900 hover:bg-orange-100",
+    box: "border-orange-200 bg-orange-50",
+  },
+  cta: {
+    badge: "bg-rose-100 text-rose-900 hover:bg-rose-100",
+    box: "border-rose-200 bg-rose-50",
+  },
+  saudavel: {
+    badge: "bg-emerald-100 text-emerald-900 hover:bg-emerald-100",
+    box: "border-emerald-200 bg-emerald-50",
+  },
+};
+
 export function VideoRetentionChart({
   retention,
   className,
 }: VideoRetentionChartProps) {
   const points = retentionChartPoints(retention);
   const diagnosis = diagnoseRetention(retention);
+  const style = AREA_STYLES[diagnosis.area];
   const avgPct =
     retention.duration_sec > 0
       ? Math.min(
@@ -38,11 +62,16 @@ export function VideoRetentionChart({
 
   return (
     <div className={cn("space-y-3 rounded-xl border bg-background p-4", className)}>
-      <div>
-        <p className="text-sm font-medium">Retenção do vídeo</p>
-        <p className="text-xs text-muted-foreground">
-          % de pessoas que chegaram a cada ponto do vídeo
-        </p>
+      <div className="flex flex-wrap items-start justify-between gap-2">
+        <div>
+          <p className="text-sm font-medium">Retenção do vídeo</p>
+          <p className="text-xs text-muted-foreground">
+            % de pessoas que chegaram a cada ponto do vídeo
+          </p>
+        </div>
+        <Badge className={cn("font-normal", style.badge)}>
+          {diagnosis.label}
+        </Badge>
       </div>
 
       <div className="grid grid-cols-3 gap-2 text-center">
@@ -110,9 +139,13 @@ export function VideoRetentionChart({
       </div>
 
       <div className="grid grid-cols-3 gap-2 text-center text-xs">
-        <DropStat label="Queda no hook" value={diagnosis.dropHook} />
-        <DropStat label="Queda no meio" value={diagnosis.dropMid} />
-        <DropStat label="Queda no final" value={diagnosis.dropEnd} />
+        <DropStat label="Queda no hook" value={diagnosis.dropHook} active={diagnosis.area === "hook"} />
+        <DropStat label="Queda no meio" value={diagnosis.dropMid} active={diagnosis.area === "conteudo"} />
+        <DropStat label="Queda no final" value={diagnosis.dropEnd} active={diagnosis.area === "cta"} />
+      </div>
+
+      <div className={cn("rounded-lg border px-3 py-2 text-xs leading-relaxed", style.box)}>
+        {diagnosis.hint}
       </div>
     </div>
   );
@@ -132,12 +165,19 @@ function Stat({ label, value }: { label: string; value: string }) {
 function DropStat({
   label,
   value,
+  active,
 }: {
   label: string;
   value: number;
+  active: boolean;
 }) {
   return (
-    <div className="rounded-lg border bg-muted/30 px-2 py-2">
+    <div
+      className={cn(
+        "rounded-lg border px-2 py-2",
+        active ? "border-foreground/20 bg-muted/60" : "bg-muted/30"
+      )}
+    >
       <p className="text-[10px] text-muted-foreground">{label}</p>
       <p className="mt-0.5 font-semibold tabular-nums">−{value.toFixed(0)} pp</p>
     </div>

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { construirRelatorio } from "@/lib/benchmark-report";
+import { isoValido, janelaPadrao } from "@/lib/format";
 import { getInsights } from "@/lib/insights";
 import { renderRelatorioHtml } from "@/lib/report-html";
 import type { KindFilter } from "@/lib/types";
@@ -25,8 +26,25 @@ function somarDias(iso: string, dias: number): string {
 export async function GET(request: NextRequest) {
   try {
     const sp = request.nextUrl.searchParams;
-    const dateFrom = sp.get("from") || "2026-08-01";
-    const dateTo = sp.get("to") || "2026-08-11";
+    const padrao = janelaPadrao();
+    const dateFrom = sp.get("from") || padrao.de;
+    const dateTo = sp.get("to") || padrao.ate;
+
+    // Data inválida chegava até `somarDias`, onde `toISOString()` de um
+    // Invalid Date lança RangeError — e o relatório abria com um 500 de
+    // "Invalid time value", que não diz nada a quem clicou no botão.
+    if (!isoValido(dateFrom) || !isoValido(dateTo)) {
+      return NextResponse.json(
+        { error: "Datas inválidas — use o formato AAAA-MM-DD." },
+        { status: 400 }
+      );
+    }
+    if (dateFrom > dateTo) {
+      return NextResponse.json(
+        { error: "A data inicial é posterior à final." },
+        { status: 400 }
+      );
+    }
 
     const dias =
       Math.round(

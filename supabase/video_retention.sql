@@ -15,11 +15,10 @@ alter table ad_insights
 -- Mídia + transcrição (em ad_creatives ou na view)
 alter table ad_creatives
   add column if not exists video_storage_url text,
-  add column if not exists video_transcript text,
-  add column if not exists preview_shareable_link text;
+  add column if not exists video_transcript text;
 
 -- Campos sugeridos na view v_ads_performance:
--- video_storage_url, video_transcript, preview_shareable_link,
+-- video_storage_url, video_transcript,
 -- video_plays, video_avg_watch_time_sec, video_duration_sec,
 -- video_p25, video_p50, video_p75, video_p95, video_p100
 

@@ -71,7 +71,14 @@ function CardTipo({
             <Icone className="size-5 text-white" />
           </div>
           <div>
-            <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100">{titulo}</h3>
+            <div className="flex items-center gap-1.5">
+              <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100">{titulo}</h3>
+              {/* Cliques, CTR e custo por resultado só existem na Meta —
+                  o Google entrega campanha, não anúncio. */}
+              <span className="rounded-full bg-gray-100 px-1.5 py-px text-[9px] font-medium uppercase tracking-wide text-gray-500 dark:bg-white/10 dark:text-gray-400">
+                Meta
+              </span>
+            </div>
             <p className="text-xs text-gray-500 dark:text-gray-400">
               {indicador ?? "Sem resultados no período"}
             </p>
@@ -105,10 +112,12 @@ const TITULO_TOTAL: Record<KindFilter, string> = {
 
 export function SummaryCards({
   kindTotals,
+  investimento,
   kind,
   loading,
 }: {
   kindTotals: InsightsResponse["kindTotals"] | null;
+  investimento: InsightsResponse["investimento"] | null;
   kind: KindFilter;
   loading?: boolean;
 }) {
@@ -118,9 +127,26 @@ export function SummaryCards({
   // O card de topo acompanha o seletor: ao filtrar por um tipo,
   // o total deixa de somar o outro.
   const inclui = (k: "conversao" | "branding") => kind === "todos" || kind === k;
+
+  /*
+    O Google entra no total, não nos cards de Conversão e Branding.
+
+    Aqueles cards mostram cliques, CTR e custo por resultado — métricas de
+    anúncio que só a Meta entrega. Mas o card grande é "quanto foi
+    investido", e omitir R$ 32 mil de Google dele fazia a mesma tela exibir
+    dois investimentos diferentes: o daqui e o da aba Praça × Curso.
+
+    Cada balde acompanha o seletor. Somar o Google inteiro sob "Conversão"
+    mostrava R$ 197.422,82 aqui contra R$ 191.317,35 na aba Praça × Curso —
+    a diferença eram os R$ 6.105,47 de Google classificado como branding.
+  */
+  const externo =
+    (inclui("conversao") ? investimento?.externo.conversao ?? 0 : 0) +
+    (inclui("branding") ? investimento?.externo.branding ?? 0 : 0);
   const total =
     (inclui("conversao") ? c?.spend ?? 0 : 0) +
-    (inclui("branding") ? b?.spend ?? 0 : 0);
+    (inclui("branding") ? b?.spend ?? 0 : 0) +
+    externo;
   const impressoes =
     (inclui("conversao") ? c?.impressions ?? 0 : 0) +
     (inclui("branding") ? b?.impressions ?? 0 : 0);
@@ -144,7 +170,9 @@ export function SummaryCards({
             <TrendingUp className="size-3.5" />
             {loading || !kindTotals
               ? "—"
-              : `${formatMetric(impressoes, "number")} impressões`}
+              : externo > 0
+                ? `Meta ${formatMetric(total - externo, "currency")} · Google ${formatMetric(externo, "currency")}`
+                : `${formatMetric(impressoes, "number")} impressões`}
           </div>
         </div>
       </div>

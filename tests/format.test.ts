@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { formatMetric, formatDateBR } from "@/lib/format";
+import { formatMetric, formatDateBR, isoValido } from "@/lib/format";
 
 describe("formatMetric", () => {
   describe("percentual", () => {
@@ -69,4 +69,36 @@ describe("formatDateBR", () => {
     expect(formatDateBR("2026-01-01")).toBe("01/01/2026");
     expect(formatDateBR("2026-12-31")).toBe("31/12/2026");
   });
+});
+
+describe("isoValido", () => {
+  it.each(["2026-08-24", "2026-01-01", "2026-12-31", "2024-02-29"])(
+    "aceita %s",
+    (v) => {
+      expect(isoValido(v)).toBe(true);
+    }
+  );
+
+  /**
+   * Sem esta barreira o valor ia cru para o Postgres, que respondia
+   * `invalid input syntax for type date` — erro interno do banco devolvido
+   * ao cliente como 500, quando é erro de quem chamou.
+   */
+  it.each(["abc", "", "24/08/2026", "2026-8-24", "2026-08", "2026-08-24T00:00:00"])(
+    "recusa %s",
+    (v) => {
+      expect(isoValido(v)).toBe(false);
+    }
+  );
+
+  /**
+   * `new Date("2026-02-31")` não lança: rola para 3 de março. A comparação
+   * com o ISO de volta é o que pega a data que não existe.
+   */
+  it.each(["2026-02-31", "2026-13-01", "2026-00-10", "2025-02-29"])(
+    "recusa a data impossível %s",
+    (v) => {
+      expect(isoValido(v)).toBe(false);
+    }
+  );
 });

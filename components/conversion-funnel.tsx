@@ -1,6 +1,13 @@
 "use client";
 
-import { ArrowDown, Eye, MousePointerClick, Sparkles, Users } from "lucide-react";
+import {
+  ArrowDown,
+  Eye,
+  GraduationCap,
+  MousePointerClick,
+  Sparkles,
+  Users,
+} from "lucide-react";
 import { formatMetric } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import type { Funil } from "@/lib/types";
@@ -18,13 +25,14 @@ const ROTULOS: Record<string, string> = {
  * invisível. A largura é um afunilamento fixo, legível; o número real fica
  * em destaque para não induzir leitura de área.
  */
-const LARGURAS = ["78%", "58%", "40%"];
+const LARGURAS = ["78%", "60%", "44%", "30%"];
 
-/** Cada etapa tem sua própria cor, do topo do funil até a conversão. */
+/** Cada etapa tem sua própria cor, do topo do funil até a matrícula. */
 const CORES = {
   impressoes: { tinta: "rgba(56,189,248,0.22)", borda: "rgba(125,211,252,0.45)", brilho: "bg-sky-400/40" },
   cliques: { tinta: "rgba(167,139,250,0.24)", borda: "rgba(196,181,253,0.45)", brilho: "bg-violet-400/40" },
   resultado: { tinta: "rgba(52,211,153,0.24)", borda: "rgba(110,231,183,0.5)", brilho: "bg-emerald-400/45" },
+  matricula: { tinta: "rgba(251,191,36,0.26)", borda: "rgba(253,224,71,0.55)", brilho: "bg-amber-300/45" },
 } as const;
 
 function Etapa({
@@ -113,6 +121,7 @@ export function ConversionFunnel({
   const vazio = !f || loading;
   const rotuloFinal = f?.indicador ? (ROTULOS[f.indicador] ?? "Resultados") : "Resultados";
   const n = (v: number | undefined) => (vazio ? "—" : formatMetric(v ?? 0, "number"));
+  const temMatricula = f?.matriculas !== null && f?.matriculas !== undefined;
 
   return (
     <div className="relative overflow-hidden rounded-2xl bg-[#0d1526] p-5 shadow-sm">
@@ -126,7 +135,18 @@ export function ConversionFunnel({
       <div className="relative">
         <div className="mb-5 flex flex-wrap items-start justify-between gap-3">
           <div>
-            <h3 className="text-sm font-medium text-white">Funil de conversão</h3>
+            <div className="flex items-center gap-1.5">
+              <h3 className="text-sm font-medium text-white">Funil de conversão</h3>
+              {/*
+                Impressão, alcance e clique no link só existem na Meta — o
+                Google entrega campanha, não anúncio. Sem este selo, o funil
+                mostrando 11.555 leads ao lado da aba Praça × Curso mostrando
+                17.062 pareceria contradição, quando são recortes diferentes.
+              */}
+              <span className="rounded-full border border-white/20 bg-white/10 px-1.5 py-px text-[9px] font-medium uppercase tracking-wide text-white/70">
+                Meta
+              </span>
+            </div>
             <p className="mt-0.5 text-xs text-white/50">
               Onde o investimento entra e onde ele se perde
             </p>
@@ -164,10 +184,28 @@ export function ConversionFunnel({
             cor={CORES.cliques}
           />
 
+          {/*
+            Engajamento e visita de perfil acontecem dentro do Meta, sem
+            passar pelo site: dividi-los pelos cliques dava "conversão da
+            página: 483%". Quando o resultado não descende do clique, a taxa
+            que faz sentido é sobre impressões, e o rótulo diz isso.
+          */}
           <Taxa
-            valor={f?.taxaPagina ?? 0}
-            titulo="conversão da página"
-            descricao="— clicou e converteu"
+            valor={
+              (f?.resultadoAposClique ?? true)
+                ? (f?.taxaPagina ?? 0)
+                : (f?.taxaSobreImpressoes ?? 0)
+            }
+            titulo={
+              (f?.resultadoAposClique ?? true)
+                ? "conversão da página"
+                : "sobre impressões"
+            }
+            descricao={
+              (f?.resultadoAposClique ?? true)
+                ? "— clicou e converteu"
+                : "— a ação não passa pelo site"
+            }
             loading={vazio}
           />
 
@@ -183,8 +221,51 @@ export function ConversionFunnel({
             largura={LARGURAS[2]}
             cor={CORES.resultado}
           />
+
+          {/*
+            A matrícula não vem da Meta e não existe para todo recorte: sem
+            dado carregado a etapa some, em vez de aparecer como zero — que
+            se leria como "ninguém se matriculou".
+          */}
+          {temMatricula && (
+            <>
+              {/*
+                "da Meta" no rótulo não é detalhe: este funil inteiro é
+                Meta — impressão, clique e resultado saem de lá. O card de
+                matrículas mostra a mesma razão com o lead de TODAS as
+                mídias no denominador, e dá outro número (13,1% aqui contra
+                8,9% lá). Sem dizer qual é qual, os dois pareciam a mesma
+                métrica discordando de si mesma.
+              */}
+              <Taxa
+                valor={f?.taxaMatricula ?? 0}
+                titulo="conversão comercial"
+                descricao="— lead da Meta virou matrícula"
+                loading={vazio}
+              />
+
+              <Etapa
+                titulo="Matrículas"
+                valor={n(f?.matriculas ?? 0)}
+                legenda={
+                  vazio || !f?.matriculas
+                    ? undefined
+                    : `${formatMetric(f.investimento / f.matriculas, "currency")} cada`
+                }
+                icone={GraduationCap}
+                largura={LARGURAS[3]}
+                cor={CORES.matricula}
+              />
+            </>
+          )}
         </div>
 
+        {temMatricula && (
+          <p className="mt-4 text-center text-[10px] leading-relaxed text-white/40">
+            Matrícula cruzada por dia, praça e curso — não há atribuição por
+            clique, então parte delas é orgânica.
+          </p>
+        )}
       </div>
     </div>
   );

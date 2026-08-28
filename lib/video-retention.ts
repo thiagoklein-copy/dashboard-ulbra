@@ -113,9 +113,14 @@ export function formatWatchTime(seconds: number): string {
  * começando em 100. Como é percentual, somar os dias não faz sentido: cada
  * ponto é ponderado pelas reproduções daquele dia, igual ao resto do arquivo.
  *
- * ThruPlay pode vir nulo num dia sem nenhum (o Meta omite a ação em vez de
- * mandar zero), então a retenção usa só os dias que reportaram — dividir pelo
- * total de plays incluindo esses dias empurraria a taxa para baixo.
+ * ThruPlay vem nulo quando não houve nenhum: o Meta omite a ação em vez de
+ * mandar zero. `montarDesempenho` traduz isso para retenção zero — que é o
+ * valor certo, porque "nenhum ThruPlay" é performance, não dado ausente — e
+ * o dia entra na média ponderada como qualquer outro.
+ *
+ * (Este comentário já afirmou o contrário: que esses dias eram excluídos do
+ * denominador. Nunca foram, e `tests/video-retention.test.ts` fixa o
+ * comportamento real. Ficava convidando a "corrigir" código que está certo.)
  */
 export function mergeVideoDesempenho(
   items: Array<VideoDesempenho | null | undefined>

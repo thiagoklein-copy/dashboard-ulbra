@@ -30,7 +30,13 @@ export function isValidPassword(password: string): boolean {
   return iguaisEmTempoConstante(password, esperada);
 }
 
-/** Web Crypto — o middleware roda no Edge e não tem node:crypto. */
+/**
+ * Web Crypto, e não `node:crypto`.
+ *
+ * O portão de autenticação (`proxy.ts`) pode ser distribuído para CDN e
+ * rodar fora do runtime principal, onde `node:crypto` não existe. A API
+ * global funciona nos dois lugares.
+ */
 async function assinar(mensagem: string): Promise<string> {
   const chave = await crypto.subtle.importKey(
     "raw",
@@ -85,10 +91,42 @@ const TENTATIVAS_MAX = 8;
 const JANELA_MS = 10 * 60 * 1000;
 const tentativas = new Map<string, { n: number; ate: number }>();
 
+/**
+ * O mapa só encolhia quando alguém consultava a mesma origem de novo.
+ *
+ * `X-Forwarded-For` é um cabeçalho que o cliente escolhe: variá-lo a cada
+ * tentativa criava uma entrada nova que nunca mais era visitada, e o mapa
+ * crescia sem teto até derrubar o processo. Agora toda gravação varre o que
+ * já venceu, e um teto duro impede que uma rajada estoure a memória antes
+ * da janela expirar.
+ */
+const ORIGENS_MAX = 10_000;
+
+/*
+  Este contador vive na memória do processo.
+
+  Em deploy serverless ou com mais de uma instância, cada uma tem o seu, e
+  o limite efetivo vira 8 × número de instâncias. Aceitável para um painel
+  interno com uma senha só, e o custo de acertar é uma dependência externa
+  (Redis/Upstash) para guardar oito inteiros. Se o painel abrir para fora,
+  ou se o número de instâncias crescer, é o primeiro lugar a mexer.
+*/
+
+function podar(agora: number): void {
+  for (const [chave, v] of tentativas) {
+    if (agora > v.ate) tentativas.delete(chave);
+  }
+  // Se depois da poda ainda estourou, a janela inteira é lixo de rajada:
+  // limpar tudo perde no máximo alguns contadores legítimos, e o bloqueio
+  // volta a valer na tentativa seguinte.
+  if (tentativas.size > ORIGENS_MAX) tentativas.clear();
+}
+
 export function registrarFalha(origem: string): void {
   const agora = Date.now();
   const atual = tentativas.get(origem);
   if (!atual || agora > atual.ate) {
+    podar(agora);
     tentativas.set(origem, { n: 1, ate: agora + JANELA_MS });
     return;
   }

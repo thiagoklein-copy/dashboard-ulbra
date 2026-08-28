@@ -47,11 +47,11 @@ function groupKey(row: AdInsightRow, level: AggregationLevel): string {
 function displayName(row: AdInsightRow, level: AggregationLevel): string {
   switch (level) {
     case "campaign":
-      return row.campaign_name ?? "Sem campanha";
+      return row.campaign_name;
     case "adset":
-      return row.adset_name ?? "Sem conjunto";
+      return row.adset_name;
     case "ad":
-      return row.ad_name ?? "Sem anúncio";
+      return row.ad_name;
   }
 }
 
@@ -97,7 +97,6 @@ export function aggregateRows(
           campaign_name: row.campaign_name,
           adset_name: level === "campaign" ? null : row.adset_name,
           ad_name: level === "ad" ? row.ad_name : null,
-          ad_id: row.ad_id,
           spend: 0,
           impressions: 0,
           clicks: 0,
@@ -115,7 +114,6 @@ export function aggregateRows(
           video_storage_url: row.video_storage_url ?? null,
           video_transcript: row.video_transcript ?? null,
           link_url: row.link_url,
-          preview_shareable_link: row.preview_shareable_link ?? null,
           video_retention: row.video_retention,
           video_desempenho: row.video_desempenho,
           ad_count: 1,
@@ -154,9 +152,6 @@ export function aggregateRows(
         existing.base.video_storage_url = row.video_storage_url ?? null;
         existing.base.video_transcript = row.video_transcript ?? null;
         existing.base.link_url = row.link_url;
-        existing.base.preview_shareable_link =
-          row.preview_shareable_link ?? null;
-        existing.base.ad_id = row.ad_id;
       }
     }
   }
@@ -255,7 +250,7 @@ export function filterRows(
     search: string;
   }
 ): AdInsightRow[] {
-  const search = (opts.search ?? "").trim().toLowerCase();
+  const search = opts.search.trim().toLowerCase();
 
   return rows.filter((row) => {
     if (row.date_start < opts.dateFrom || row.date_start > opts.dateTo) {
@@ -270,21 +265,15 @@ export function filterRows(
     if (opts.pracas.length && !opts.pracas.includes(row.praca)) {
       return false;
     }
-    if (
-      opts.campaigns.length &&
-      !opts.campaigns.includes(row.campaign_name ?? "")
-    ) {
+    if (opts.campaigns.length && !opts.campaigns.includes(row.campaign_name)) {
       return false;
     }
-    if (
-      opts.adsets.length &&
-      !opts.adsets.includes(row.adset_name ?? "")
-    ) {
+    if (opts.adsets.length && !opts.adsets.includes(row.adset_name)) {
       return false;
     }
     if (search) {
       const haystack = [
-        row.ad_name ?? "",
+        row.ad_name,
         row.headline ?? "",
         row.primary_text ?? "",
       ]

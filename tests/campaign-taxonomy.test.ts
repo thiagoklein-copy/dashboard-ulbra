@@ -136,3 +136,33 @@ describe("classificarCampanha", () => {
     });
   });
 });
+
+/** Mesmo rotulo que lib/campaign-taxonomy usa para o que nao reconhece. */
+const NAO_CLASSIFICADO = "Não classificado";
+
+describe("entrada suja", () => {
+  // Regressao: 37 linhas com campaign_name nulo derrubaram o dashboard
+  // inteiro com "Cannot read properties of null (reading 'toLowerCase')".
+  // Toda consulta cujo periodo incluisse aquele dia devolvia 500.
+  it.each([null, undefined, ""])("nao estoura com %p", (entrada) => {
+    const t = classificarCampanha(entrada as unknown as string);
+    expect(t.curso).toBe(NAO_CLASSIFICADO);
+    expect(t.praca).toBe(NAO_CLASSIFICADO);
+    expect(t.kind).toBe("conversao");
+    expect(t.recorte).toBeNull();
+  });
+
+  it("uma linha suja no meio nao contamina as demais", () => {
+    const nomes = [
+      "2026-2-medicina-canoas-advplus-10agosto-leadsite-ativar",
+      null,
+      "2026-2-odonto-torres-advplus-10agosto-leadsite-ativar",
+    ];
+    const r = nomes.map((n) => classificarCampanha(n as unknown as string));
+    expect(r.map((x) => x.curso)).toEqual([
+      "Medicina",
+      NAO_CLASSIFICADO,
+      "Odontologia",
+    ]);
+  });
+});

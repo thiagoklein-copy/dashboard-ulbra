@@ -13,10 +13,12 @@ import { MultiSelectFilter } from "@/components/filters/multi-select-filter";
 import { SearchFilter } from "@/components/filters/search-filter";
 import { GenerateReportButton } from "@/components/generate-report-button";
 import { KindSelector } from "@/components/kind-selector";
-import { LeadsMap } from "@/components/leads-map";
+import { MatriculasCards } from "@/components/matriculas-cards";
+import { MatrizPracaCurso } from "@/components/matriz-praca-curso";
 import { RateRings } from "@/components/rate-rings";
 import { SummaryCards } from "@/components/summary-cards";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useDashboardParams } from "@/hooks/use-dashboard-params";
 import { cycleColumnSort } from "@/lib/metrics-config";
 import type { InsightsResponse, MetricKey } from "@/lib/types";
@@ -27,6 +29,7 @@ export function Dashboard() {
   const { columns, setColumns } = useVisibleColumns();
   const [data, setData] = useState<InsightsResponse | null>(null);
   const [loading, setLoading] = useState(true);
+  const [aba, setAba] = useState("geral");
   const [error, setError] = useState<string | null>(null);
 
   const fetchData = useCallback(async () => {
@@ -65,7 +68,17 @@ export function Dashboard() {
     }
   }, [params]);
 
+  /*
+    Refaz a consulta quando os filtros mudam.
+
+    `react-hooks/set-state-in-effect` pega o `setLoading(true)` síncrono lá
+    dentro. É exatamente busca de dados — o caso que a própria regra admite
+    não ter alternativa boa sem uma biblioteca de fetch. Tirar o
+    `setLoading` deixaria a tela com os números antigos parados enquanto os
+    novos vêm, que é pior do que um render a mais.
+  */
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     void fetchData();
   }, [fetchData]);
 
@@ -125,6 +138,7 @@ export function Dashboard() {
 
         <SummaryCards
           kindTotals={data?.kindTotals ?? null}
+          investimento={data?.investimento ?? null}
           kind={params.kind}
           loading={loading}
         />
@@ -188,26 +202,41 @@ export function Dashboard() {
           </div>
         </div>
 
-        <div className="grid min-w-0 gap-4 lg:grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)]">
-          <ConversionFunnel funil={data?.funil ?? null} loading={loading} />
-          <RateRings funil={data?.funil ?? null} loading={loading} />
-        </div>
-
-        <LeadsMap porPraca={data?.breakdown.porPraca ?? []} loading={loading} />
-
-        <BreakdownChart
-          porCurso={data?.breakdown.porCurso ?? []}
-          porPraca={data?.breakdown.porPraca ?? []}
-          loading={loading}
-        />
-
         {error && (
           <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
             {error}
           </div>
         )}
 
-        <div className="space-y-3 rounded-2xl bg-white p-4 shadow-sm dark:bg-[#171a20]">
+        {/*
+          A aba é estado local, não da URL: os filtros vivem em `params`, e
+          `fetchData` depende do objeto inteiro. Pendurar a aba ali faria
+          cada troca de recorte refazer a consulta sem nenhum dado novo.
+        */}
+        <Tabs value={aba} onValueChange={setAba} className="min-w-0 gap-4">
+          <TabsList>
+            <TabsTrigger value="geral">Visão geral</TabsTrigger>
+            <TabsTrigger value="matriz">Praça × Curso</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="geral" className="min-w-0 space-y-4">
+            <div className="grid min-w-0 gap-4 lg:grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)]">
+              <ConversionFunnel funil={data?.funil ?? null} loading={loading} />
+              <RateRings funil={data?.funil ?? null} loading={loading} />
+            </div>
+
+            <MatriculasCards
+              matriculas={data?.matriculas ?? null}
+              loading={loading}
+            />
+
+            <BreakdownChart
+              porCurso={data?.breakdown.porCurso ?? []}
+              porPraca={data?.breakdown.porPraca ?? []}
+              loading={loading}
+            />
+
+            <div className="space-y-3 rounded-2xl bg-white p-4 shadow-sm dark:bg-[#171a20]">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <LevelSelector
               value={params.level}
@@ -239,10 +268,16 @@ export function Dashboard() {
             sortBy={params.sortBy}
             sortDir={params.sortDir}
             onSort={handleSort}
-            onPageChange={(page) => setParams({ page })}
-            onPageSizeChange={(pageSize) => setParams({ pageSize, page: 1 })}
-          />
-        </div>
+                onPageChange={(page) => setParams({ page })}
+                onPageSizeChange={(pageSize) => setParams({ pageSize, page: 1 })}
+              />
+            </div>
+          </TabsContent>
+
+          <TabsContent value="matriz" className="min-w-0">
+            <MatrizPracaCurso matriz={data?.matriz ?? null} loading={loading} />
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   );

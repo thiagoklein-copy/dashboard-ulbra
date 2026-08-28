@@ -71,6 +71,19 @@ export function useVisibleColumns() {
   const [columns, setColumns] = useState<ColumnKey[]>(DEFAULT_VISIBLE_COLUMNS);
   const [ready, setReady] = useState(false);
 
+  /*
+    Hidrata a preferência salva depois da primeira renderização.
+
+    `react-hooks/set-state-in-effect` reclama com razão — isto é estado
+    externo entrando por efeito, e custa um render a mais. O jeito certo
+    seria `useSyncExternalStore`, mas ele exige um snapshot com referência
+    estável (senão o React entra em laço) e um snapshot de servidor
+    separado. Ler no inicializador de `useState` não serve: a rota é
+    pré-renderizada, e o servidor não tem `localStorage` — o HTML sairia com
+    as colunas padrão e o cliente com as salvas, que é erro de hidratação.
+
+    Fica assim, silenciado e explicado, até valer a pena o store externo.
+  */
   useEffect(() => {
     try {
       const raw = localStorage.getItem(COLUMNS_STORAGE_KEY);
@@ -80,6 +93,7 @@ export function useVisibleColumns() {
           const withName = parsed.includes("name")
             ? parsed
             : (["name", ...parsed] as ColumnKey[]);
+          // eslint-disable-next-line react-hooks/set-state-in-effect
           setColumns(withName);
         }
       }
